@@ -29,6 +29,8 @@ interface CreateTaskDialogProps {
   onCreateTask: (task: Task) => void
   parentTask?: Task | null
   existingTasks?: Task[]
+  projects: { id: number; name: string }[]
+  defaultProjectId?: number | null
 }
 
 export function CreateTaskDialog({
@@ -37,6 +39,8 @@ export function CreateTaskDialog({
   onCreateTask,
   parentTask = null,
   existingTasks = [],
+  projects = [],
+  defaultProjectId = null,
 }: CreateTaskDialogProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -46,6 +50,7 @@ export function CreateTaskDialog({
   const [dueDate, setDueDate] = useState<Date | null>(null)
   const [estimatedTimeHours, setEstimatedTimeHours] = useState<number | null>(null)
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<number | 'none'>(defaultProjectId ?? 'none')
 
   // Reset form when dialog opens/closes or parent task changes
   useEffect(() => {
@@ -64,8 +69,10 @@ export function CreateTaskDialog({
       } else {
         resetForm()
       }
+      if (defaultProjectId) setSelectedProjectId(defaultProjectId)
+      else setSelectedProjectId('none')
     }
-  }, [open, parentTask])
+  }, [open, parentTask, defaultProjectId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +89,7 @@ export function CreateTaskDialog({
       estimatedTimeHours: estimatedTimeHours || undefined,
       parent: selectedParentId ? ({ id: selectedParentId } as Task) : undefined,
       subTasks: [],
+      projectId: selectedProjectId === 'none' ? undefined : selectedProjectId,
     }
 
     onCreateTask(newTask)
@@ -93,10 +101,11 @@ export function CreateTaskDialog({
     setDescription("")
     setStatus(TaskStatus.TODO)
     setTags("")
-    setPriority(null)
+    setPriority(3)
     setDueDate(null)
     setEstimatedTimeHours(null)
     setSelectedParentId(null)
+    setSelectedProjectId('none')
   }
 
   // Flatten tasks for parent selection dropdown
@@ -170,6 +179,24 @@ export function CreateTaskDialog({
               </div>
             )}
 
+            <div className="grid gap-2">
+              <Label htmlFor="project">프로젝트</Label>
+              <Select
+                value={selectedProjectId === 'none' ? 'none' : selectedProjectId.toString()}
+                onValueChange={value => setSelectedProjectId(value === 'none' ? 'none' : Number(value))}
+              >
+                <SelectTrigger id="project">
+                  <SelectValue placeholder="프로젝트 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">프로젝트 없음</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="status">상태</Label>
@@ -227,7 +254,7 @@ export function CreateTaskDialog({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                    <Calendar mode="single" selected={dueDate ?? undefined} onSelect={d => setDueDate(d ?? null)} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>

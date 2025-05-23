@@ -35,7 +35,7 @@ export function flattenTaskTree(tasks: Task[]): Task[] {
 
   function traverse(task: Task) {
     result.push(task)
-    task.subTasks.forEach(traverse)
+    (task.subTasks ?? []).forEach(traverse)
   }
 
   tasks.forEach(traverse)
