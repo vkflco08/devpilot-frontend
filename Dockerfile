@@ -1,8 +1,11 @@
 # Install dependencies only when needed
 FROM node:18-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install --legacy-peer-deps
 
 # Rebuild the source code only when needed
 FROM node:18-alpine AS builder
