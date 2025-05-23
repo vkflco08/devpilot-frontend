@@ -2,52 +2,191 @@
 
 import { useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { User, Settings, Clock, Calendar, ArrowLeft, CheckCircle, BarChart2, Edit, Mail, Phone } from "lucide-react"
+import { User, Settings, Clock, Calendar, ArrowLeft, CheckCircle, BarChart2, Edit, Mail, Phone, Loader2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { mockTasks } from "@/lib/mock-data"
 import { TaskStatus } from "@/lib/types"
-import { flattenTaskTree } from "@/lib/task-utils"
 import { AuthContext } from '@/contexts/AuthContext'
 import RequireAuth from "@/components/RequireAuth"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
+import axios from "@/lib/axiosInstance"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { useTheme } from "next-themes"
 
-function formatDate(dateString?: string | null) {
+function formatRelativeDate(dateString?: string | null) {
   if (!dateString) return "-";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "-";
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "오늘";
+  if (diffDays === 1) return "어제";
+  if (diffDays <= 7) return `${diffDays}일 전`;
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+function ProfileEditDialog({ open, onOpenChange, myInfo, onSave }: { open: boolean, onOpenChange: (v: boolean) => void, myInfo: any, onSave: () => void }) {
+  const [form, setForm] = useState({
+    name: myInfo.name || "",
+    email: myInfo.email || "",
+    role: myInfo.role || "",
+    phoneNumber: myInfo.phoneNumber || "",
+    department: myInfo.department || "",
+    description: myInfo.description || "",
+  })
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setForm({
+      name: myInfo.name || "",
+      email: myInfo.email || "",
+      role: myInfo.role || "",
+      phoneNumber: myInfo.phoneNumber || "",
+      department: myInfo.department || "",
+      description: myInfo.description || "",
+    })
+  }, [myInfo, open])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSave = async () => {
+    setLoading(true)
+    try {
+      console.log(form)
+      const res = await axios.put("/api/member/info_edit", form)
+      if (res.data.resultCode === "SUCCESS") {
+        onSave()
+        onOpenChange(false)
+      } else {
+        alert(res.data.message || "프로필 수정에 실패했습니다.")
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "프로필 수정 중 오류가 발생했습니다.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>프로필 편집</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Input name="name" value={form.name} onChange={handleChange} placeholder="이름" required />
+          <Input name="email" value={form.email} onChange={handleChange} placeholder="이메일" required type="email" />
+          <Input name="role" value={form.role} onChange={handleChange} placeholder="역할" />
+          <Input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} placeholder="전화번호" />
+          <Input name="department" value={form.department} onChange={handleChange} placeholder="부서" />
+          <textarea name="description" value={form.description} onChange={handleChange} className="w-full border p-2 rounded" placeholder="설명" />
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave} disabled={loading}>{loading ? "저장 중..." : "저장"}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 export default function MyPage() {
 
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
+  const [selectedProjectId, setSelectedProjectId] = useState<'all' | number>('all');
+  const [tasks, setTasks] = useState<any[]>([])
+  const [tasksLoading, setTasksLoading] = useState(true)
+  const [tasksError, setTasksError] = useState<string|null>(null)
 
   const auth = useContext(AuthContext)
   const { myInfo, loading, error } = useMyInfo()
 
-  // Calculate task statistics
-  const allTasks = flattenTaskTree(mockTasks)
-  const assignedTasks = allTasks.length
-  const completedTasks = allTasks.filter((t) => t.status === TaskStatus.DONE).length
-  const inProgressTasks = allTasks.filter((t) => t.status === TaskStatus.DOING).length
-  const todoTasks = allTasks.filter((t) => t.status === TaskStatus.TODO).length
-  const completionRate = Math.round((completedTasks / assignedTasks) * 100)
+  const [editOpen, setEditOpen] = useState(false)
+  const handleProfileSave = () => { window.location.reload() } // 또는 useMyInfo refetch
 
-  // Mock recent activity
-  const recentActivity = [
-    { id: 1, action: "태스크 완료", task: "API 엔드포인트 문서화", date: "오늘" },
-    { id: 2, action: "태스크 생성", task: "사용자 인터페이스 개선", date: "어제" },
-    { id: 3, action: "코멘트 추가", task: "데이터베이스 스키마 설계", date: "3일 전" },
-    { id: 4, action: "태스크 상태 변경", task: "로그인 기능 구현", date: "1주일 전" },
-  ]
+  const { theme, systemTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
-  if (loading) return <div>로딩 중...</div>
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setTasksLoading(true)
+      try {
+        const res = await axios.get("/api/task/all")
+        if (res.data.resultCode === "SUCCESS") {
+          setTasks(res.data.data)
+        } else {
+          setTasksError(res.data.message || "태스크를 불러오지 못했습니다.")
+        }
+      } catch (e: any) {
+        setTasksError(e?.response?.data?.message || "태스크를 불러오지 못했습니다.")
+      } finally {
+        setTasksLoading(false)
+      }
+    }
+    fetchTasks()
+  }, [])
+
+  // 내 태스크만 보고 싶으면 아래 주석 해제 (assigneeId가 있을 때)
+  // const myTasks = tasks.filter(t => t.assigneeId === myInfo.id)
+  const myTasks = tasks // 전체 태스크
+  const sortedTasks = [...myTasks].sort((a, b) => {
+    const aDate = new Date(a.lastModifiedDate || a.createdDate || 0).getTime();
+    const bDate = new Date(b.lastModifiedDate || b.createdDate || 0).getTime();
+    return bDate - aDate;
+  });
+
+  const recentActivity = sortedTasks.slice(0, 5).map((task) => ({
+    id: task.id,
+    action: task.status === TaskStatus.DONE ? "태스크 완료" : task.status === TaskStatus.DOING ? "진행 중" : "태스크 생성",
+    task: task.title,
+    date: formatRelativeDate(task.lastModifiedDate || task.createdDate),
+  }))
+
+  const now = new Date();
+  const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  const doneThisWeek = sortedTasks.filter(t => t.status === TaskStatus.DONE && new Date(t.lastModifiedDate || t.createdDate) >= weekAgo).length;
+  const doneTasks = sortedTasks.filter(t => t.status === TaskStatus.DONE && t.createdDate && t.lastModifiedDate);
+  const avgDoneTime = doneTasks.length > 0 ?
+    (doneTasks.reduce((acc, t) => acc + (new Date(t.lastModifiedDate).getTime() - new Date(t.createdDate).getTime()), 0) / doneTasks.length / (1000*60*60*24)).toFixed(1) : "-";
+
+  const assignedTasks = sortedTasks.length
+  const completedTasks = sortedTasks.filter((t) => t.status === TaskStatus.DONE).length
+  const inProgressTasks = sortedTasks.filter((t) => t.status === TaskStatus.DOING).length
+  const todoTasks = sortedTasks.filter((t) => t.status === TaskStatus.TODO).length
+  const completionRate = assignedTasks > 0 ? Math.round((completedTasks / assignedTasks) * 100) : 0;
+
+  const projectList = Array.from(new Set(myTasks.map(t => t.projectId))).map(pid => {
+    const first = myTasks.find(t => t.projectId === pid)
+    return { id: pid, name: first?.projectName || `프로젝트 ${pid}` }
+  })
+
+  const filteredTasks = selectedProjectId === 'all'
+    ? myTasks
+    : myTasks.filter((task) => task.projectId === selectedProjectId);
+
+  if ((loading || tasksLoading)) {
+    if (!mounted) return null
+    const resolved = theme === "system" ? systemTheme : theme
+    const bgClass = resolved === "dark"
+      ? "bg-gradient-to-br from-[#18181b] to-[#23272f]"
+      : "bg-gradient-to-br from-gray-50 to-gray-200"
+    const textClass = resolved === "dark" ? "text-gray-300" : "text-muted-foreground"
+    return (
+      <div className={`flex flex-col items-center justify-center min-h-screen ${bgClass}`}>
+        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+        <span className={`text-base ${textClass}`}>잠시만 기다려주세요...</span>
+      </div>
+    )
+  }
   if (error) return <div>{error}</div>
   if (!myInfo) return <div>내 정보가 없습니다.</div>
 
@@ -74,10 +213,11 @@ export default function MyPage() {
                 <CardDescription>{myInfo.role}</CardDescription>
 
                 <div className="mt-4 flex flex-col gap-2">
-                  <Button variant="outline" className="w-full flex items-center gap-2">
+                  <Button variant="outline" className="w-full flex items-center gap-2" onClick={() => setEditOpen(true)}>
                     <Edit className="h-4 w-4" />
                     프로필 편집
                   </Button>
+                  <ProfileEditDialog open={editOpen} onOpenChange={setEditOpen} myInfo={myInfo} onSave={handleProfileSave} />
                   <Button variant="destructive" className="w-full flex items-center gap-2" onClick={auth?.logout}>
                     로그아웃
                   </Button>
@@ -100,7 +240,7 @@ export default function MyPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">가입일: {formatDate(myInfo.createdDate)}</span>
+                    <span className="text-sm">가입일: {formatRelativeDate(myInfo.createdDate)}</span>
                   </div>
 
                   <Separator className="my-4" />
@@ -175,7 +315,7 @@ export default function MyPage() {
                               <Clock className="h-4 w-4 text-amber-500" />
                               <span className="text-sm">평균 완료 시간</span>
                             </div>
-                            <span className="font-medium">2.5일</span>
+                            <span className="font-medium">{avgDoneTime}일</span>
                           </div>
 
                           <div className="flex items-center justify-between">
@@ -183,7 +323,7 @@ export default function MyPage() {
                               <BarChart2 className="h-4 w-4 text-blue-500" />
                               <span className="text-sm">이번 주 완료</span>
                             </div>
-                            <span className="font-medium">7개</span>
+                            <span className="font-medium">{doneThisWeek}개</span>
                           </div>
                         </div>
                       </CardContent>
@@ -215,43 +355,39 @@ export default function MyPage() {
                 <TabsContent value="tasks">
                   <Card>
                     <CardHeader>
-                      <CardTitle>내 태스크</CardTitle>
-                      <CardDescription>현재 담당하고 있는 모든 태스크 목록입니다.</CardDescription>
+                      <CardTitle>전체 태스크</CardTitle>
+                      <CardDescription>생성한 모든 태스크를 확인할 수 있습니다.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {allTasks.slice(0, 5).map((task) => (
-                          <div key={task.id} className="flex items-start gap-3 p-3 rounded-md border">
-                            <div
-                              className={`w-2 h-2 mt-2 rounded-full ${
-                                task.status === TaskStatus.TODO
-                                  ? "bg-slate-500"
-                                  : task.status === TaskStatus.DOING
-                                    ? "bg-amber-500"
-                                    : "bg-emerald-500"
-                              }`}
-                            />
-                            <div className="flex-1">
-                              <div className="flex justify-between">
-                                <h4 className="font-medium">{task.title}</h4>
-                                {task.priority && (
-                                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10">P{task.priority}</span>
+                        {sortedTasks.length === 0 ? (
+                          <div className="text-muted-foreground text-center py-8">해당 프로젝트에 태스크가 없습니다.</div>
+                        ) : (
+                          sortedTasks.map((task) => (
+                            <div key={task.id} className="flex items-start gap-3 p-3 rounded-md border">
+                              <div
+                                className={`w-2 h-2 mt-2 rounded-full ${
+                                  task.status === TaskStatus.TODO
+                                    ? "bg-slate-500"
+                                    : task.status === TaskStatus.DOING
+                                      ? "bg-amber-500"
+                                      : "bg-emerald-500"
+                                }`}
+                              />
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <h4 className="font-medium">{task.title}</h4>
+                                  <span className="text-xs text-muted-foreground">
+                                    {task.lastModifiedDate ? `수정: ${formatRelativeDate(task.lastModifiedDate)}` : task.createdDate ? `생성: ${formatRelativeDate(task.createdDate)}` : ""}
+                                  </span>
+                                </div>
+                                {task.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
                                 )}
                               </div>
-                              {task.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
-                              )}
-                              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                                <span>예상: {task.estimatedTimeHours || "-"}시간</span>
-                                {task.dueDate && <span>마감: {new Date(task.dueDate).toLocaleDateString()}</span>}
-                              </div>
                             </div>
-                          </div>
-                        ))}
-
-                        <Button variant="outline" className="w-full">
-                          모든 태스크 보기
-                        </Button>
+                          ))
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -293,7 +429,6 @@ export default function MyPage() {
                               />
                             </div>
                           </div>
-                          <Button className="mt-4">정보 수정</Button>
                         </div>
 
                         <Separator />
@@ -318,7 +453,6 @@ export default function MyPage() {
                               <input type="checkbox" />
                             </div>
                           </div>
-                          <Button className="mt-4">설정 저장</Button>
                         </div>
                       </div>
                     </CardContent>
@@ -332,3 +466,5 @@ export default function MyPage() {
     </RequireAuth>
   )
 }
+
+

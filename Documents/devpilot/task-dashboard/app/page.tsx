@@ -7,15 +7,25 @@ import { TreeView } from "@/components/tree-view"
 import { Loader2, PlusCircle } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import RequireAuth from "@/components/RequireAuth"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
+import { useTheme } from "next-themes"
 
 export default function Home() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const router = useRouter()
   const { myInfo, loading, error } = useMyInfo()
+  const { theme, systemTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
+  const resolved = theme === "system" ? systemTheme : theme
+  const bgClass = resolved === "dark"
+    ? "bg-gradient-to-br from-[#18181b] to-[#23272f]"
+    : "bg-gradient-to-br from-gray-50 to-gray-200"
+  const textClass = resolved === "dark" ? "text-gray-300" : "text-muted-foreground"
 
   return (
     <RequireAuth>
@@ -66,12 +76,19 @@ export default function Home() {
 }
 
 function LoadingState() {
+  const { theme, systemTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  const resolved = theme === "system" ? systemTheme : theme
+  const bgClass = resolved === "dark"
+    ? "bg-gradient-to-br from-[#18181b] to-[#23272f]"
+    : "bg-gradient-to-br from-gray-50 to-gray-200"
+  const textClass = resolved === "dark" ? "text-gray-300" : "text-muted-foreground"
+  if (!mounted) return null
   return (
-    <div className="flex items-center justify-center h-[80vh]">
-      <div className="flex flex-col items-center gap-2">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">로딩 중...</p>
-      </div>
+    <div className={`flex flex-col items-center justify-center h-[80vh] w-full ${bgClass}`}>
+      <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+      <span className={`text-base ${textClass}`}>잠시만 기다려주세요...</span>
     </div>
   )
 }

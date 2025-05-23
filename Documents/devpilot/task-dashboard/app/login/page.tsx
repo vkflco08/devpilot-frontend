@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AuthContext } from "@/contexts/AuthContext"
 import axios from "@/lib/axiosInstance"
+import { Loader2 } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -39,6 +40,15 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-200">
+        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+        <span className="text-base text-muted-foreground">잠시만 기다려주세요...</span>
+      </div>
+    )
   }
 
   return (

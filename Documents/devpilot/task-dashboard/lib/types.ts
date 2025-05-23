@@ -16,4 +16,5 @@ export interface Task {
   actualTimeHours?: number
   parent?: Task
   subTasks: Task[]
+  projectId?: number
 }
