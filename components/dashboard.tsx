@@ -452,9 +452,13 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
 
         <div className="flex">
           {/* Main task columns */}
-          {(loading || taskLoading) ? (
+          {loading ? (
             <div className="w-full">
               <LoadingSpinner text="태스크 불러오는 중..." />
+            </div>
+          ) : taskLoading ? (
+            <div className="w-full">
+              <LoadingSpinner text="처리 중..." />
             </div>
           ) : (
             <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${expandedTask ? "w-1/2" : "w-full"}`}>
@@ -517,7 +521,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
           )}
 
           {/* Expanded task tree view */}
-          {expandedTask && !(loading || taskLoading) && (
+          {expandedTask && !loading && !taskLoading && (
             <div className="w-1/2 pl-6 animate-in slide-in-from-right duration-300">
               <TaskTreeExpanded
                 task={expandedTask}
