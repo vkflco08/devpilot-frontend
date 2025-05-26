@@ -6,7 +6,6 @@ import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { type Task as OrigTask, TaskStatus } from "@/lib/types"
-import { mockTasks } from "@/lib/mock-data"
 import { buildTaskTree, getRootTasks, findTaskById } from "@/lib/task-utils"
 import { TaskCard } from "@/components/task-card"
 import { TaskColumn } from "@/components/task-column"
@@ -32,6 +31,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null) // 새로 추가
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [filterOptions, setFilterOptions] = useState({
     tag: "",
@@ -127,6 +127,19 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
 
     setFilteredTasks(filtered)
   }, [tasks, filterOptions])
+
+  // Create dialog이 열릴 때 parentTask 초기화
+  useEffect(() => {
+    if (isCreateDialogOpen) {
+      // nav에서 열릴 때는 parentTask를 null로 설정
+      if (!parentTaskForCreate) {
+        setParentTaskForCreate(null)
+      }
+    } else {
+      // Create dialog이 닫힐 때 parentTask 초기화
+      setParentTaskForCreate(null)
+    }
+  }, [isCreateDialogOpen])
 
   // 프로젝트별 필터링
   const projectFilteredTasks = selectedProjectId === 'all'
@@ -226,6 +239,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
       if (response.data && response.data.resultCode === "SUCCESS") {
         await fetchTasks(selectedProjectId)
         setIsCreateDialogOpen(false)
+        setParentTaskForCreate(null) // 생성 후 초기화
       } else {
         alert(response.data?.message || "태스크 생성에 실패했습니다.")
       }
@@ -294,7 +308,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
 
     // Open create dialog with parent task pre-selected
     setTimeout(() => {
-      setSelectedTask(parentTask)
+      setParentTaskForCreate(parentTask) // selectedTask 대신 parentTaskForCreate 사용
       setIsCreateDialogOpen(true)
     }, 100)
   }
@@ -519,7 +533,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         onCreateTask={handleCreateTask}
-        parentTask={selectedTask}
+        parentTask={parentTaskForCreate} // selectedTask 대신 parentTaskForCreate 사용
         existingTasks={tasks}
         projects={projectOptions}
         defaultProjectId={selectedProjectId !== 'all' ? Number(selectedProjectId) : null}

@@ -67,6 +67,7 @@ export function CreateTaskDialog({
           setPriority(parentTask.priority)
         }
       } else {
+        setSelectedParentId(null)
         resetForm()
       }
       if (defaultProjectId) setSelectedProjectId(defaultProjectId)
