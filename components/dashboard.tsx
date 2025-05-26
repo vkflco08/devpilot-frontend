@@ -386,7 +386,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   // 태스크 생성 다이얼로그에 넘길 프로젝트 목록 (id, name만)
   const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }))
 
-  if (error) return <div className="flex items-center justify-center h-[60vh] text-lg text-red-500">{error}</div>;
+  // if (error) return <div className="flex items-center justify-center h-[60vh] text-lg text-red-500">{error}</div>;
 
   return (
     <div className="min-h-screen bg-background">
