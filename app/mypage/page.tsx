@@ -148,6 +148,7 @@ export default function MyPage() {
       try {
         const res = await axios.get("/api/project/all")
         if (res.data.resultCode === "SUCCESS") {
+          console.log(res.data.data)
           setProjects(res.data.data)
         } else {
           setProjectsError(res.data.message || "프로젝트를 불러오지 못했습니다.")
@@ -158,7 +159,7 @@ export default function MyPage() {
         setProjectsLoading(false)
       }
     }
-    fetchProjects()
+    fetchProjects() 
   }, [])
 
   const myTasks = tasks // 전체 태스크
@@ -188,15 +189,6 @@ export default function MyPage() {
   const todoTasks = sortedTasks.filter((t) => t.status === TaskStatus.TODO).length
   const completionRate = assignedTasks > 0 ? Math.round((completedTasks / assignedTasks) * 100) : 0;
 
-  const projectList = Array.from(new Set(myTasks.map(t => t.projectId))).map(pid => {
-    const first = myTasks.find(t => t.projectId === pid)
-    return { id: pid, name: first?.projectName || `프로젝트 ${pid}` }
-  })
-
-  const filteredTasks = selectedProjectId === 'all'
-    ? myTasks
-    : myTasks.filter((task) => task.projectId === selectedProjectId);
-
   if ((loading || tasksLoading)) {
     if (!mounted) return null
     const resolved = theme === "system" ? systemTheme : theme
@@ -224,10 +216,7 @@ export default function MyPage() {
     try {
       const response = await axios.put(`/api/project/${project.id}`, {
         projectName: project.name,
-        projectDesc: project.description,
-        createdDate: project.createdDate,
-        updatedDate: project.updatedDate,
-        tasks: project.tasks
+        projectDescription: project.description,
       })
       
       if (response.data?.resultCode === "SUCCESS") {
@@ -237,7 +226,7 @@ export default function MyPage() {
           p.id === project.id ? { ...updatedProject } : p
         ))
         setIsProjectDetailDialogOpen(false)
-        setSelectedProject(updatedProject)
+        setSelectedProject(null)
       } else {
         alert(response.data?.message || "프로젝트 수정에 실패했습니다.")
       }

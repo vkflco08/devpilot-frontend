@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -32,39 +32,35 @@ export function ProjectDetailDialog({
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState(project?.name || "")
   const [description, setDescription] = useState(project?.description || "")
+  const [createdDate, setCreatedDate] = useState(project?.createdDate || "")
+  const [updatedDate, setUpdatedDate] = useState(project?.updatedDate || "")
+
+  useEffect(() => {
+    if (project) {
+      setName(project.name)
+      setDescription(project.description || "")
+      setCreatedDate(project.createdDate || "")
+      setUpdatedDate(project.updatedDate || "")
+    }
+  }, [project])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    try {
-      const updatedProject: Project = {
-        id: project?.id || Date.now(),
-        name,
-        description,
-        createdDate: project?.createdDate || new Date().toISOString(),
-        updatedDate: new Date().toISOString(),
-        tasks: project?.tasks || []
-      }
-      onUpdateProject(updatedProject)
-      onOpenChange(false)
-    } catch (error) {
-      console.error("Failed to update project:", error)
-    } finally {
-      setLoading(false)
+    const updatedProject: Project = {
+      id: project?.id || Date.now(),
+      name,
+      description,
+      createdDate,
+      updatedDate: new Date().toISOString(),
+      tasks: project?.tasks || []
     }
+    onUpdateProject(updatedProject)
   }
 
   const handleDelete = async () => {
     if (!project) return
-    setLoading(true)
-    try {
-      onDeleteProject(project)
-      onOpenChange(false)
-    } catch (error) {
-      console.error("Failed to delete project:", error)
-    } finally {
-      setLoading(false)
-    }
+    onDeleteProject(project)
+    onOpenChange(false)
   }
 
   return (

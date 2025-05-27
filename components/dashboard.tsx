@@ -379,7 +379,6 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
         projectName: projectName.trim(),
         projectDescription: projectDesc.trim() || undefined,
       })
-      console.log(response.data)
       if (response.data && response.data.resultCode === "SUCCESS") {
         await fetchProjects();
         setProjectDialogOpen(false)
