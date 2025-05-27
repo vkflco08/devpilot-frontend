@@ -51,6 +51,7 @@ export function CreateTaskDialog({
   const [estimatedTimeHours, setEstimatedTimeHours] = useState<number | null>(null)
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<number | 'none'>(defaultProjectId ?? 'none')
+  const [loading, setLoading] = useState(false)
 
   // Reset form when dialog opens/closes or parent task changes
   useEffect(() => {
@@ -277,7 +278,9 @@ export function CreateTaskDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               취소
             </Button>
-            <Button type="submit">생성</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "생성 중..." : "생성"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

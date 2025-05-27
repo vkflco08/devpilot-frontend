@@ -4,6 +4,15 @@ export enum TaskStatus {
   DONE = "DONE",
 }
 
+export interface Project {
+  id: number
+  name: string
+  description?: string
+  createdDate?: string
+  updatedDate?: string
+  tasks?: Task[]
+}
+
 export interface Task {
   id: number
   title: string

@@ -3,6 +3,9 @@
 import { useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { User, Settings, Clock, Calendar, ArrowLeft, CheckCircle, BarChart2, Edit, Mail, Phone, Loader2 } from "lucide-react"
+import { useMyInfo } from "@/lib/hooks/useMyInfo"
+import { type Project } from "@/lib/types"
+import { ProjectDetailDialog } from "@/components/project-detail-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,7 +15,6 @@ import { Separator } from "@/components/ui/separator"
 import { TaskStatus } from "@/lib/types"
 import { AuthContext } from '@/contexts/AuthContext'
 import RequireAuth from "@/components/RequireAuth"
-import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import axios from "@/lib/axiosInstance"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -60,7 +62,6 @@ function ProfileEditDialog({ open, onOpenChange, myInfo, onSave }: { open: boole
   const handleSave = async () => {
     setLoading(true)
     try {
-      console.log(form)
       const res = await axios.put("/api/member/info_edit", form)
       if (res.data.resultCode === "SUCCESS") {
         onSave()
@@ -106,6 +107,12 @@ export default function MyPage() {
   const [tasksLoading, setTasksLoading] = useState(true)
   const [tasksError, setTasksError] = useState<string|null>(null)
 
+  const [projects, setProjects] = useState<any[]>([])
+  const [projectsLoading, setProjectsLoading] = useState(true)
+  const [projectsError, setProjectsError] = useState<string|null>(null)
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [isProjectDetailDialogOpen, setIsProjectDetailDialogOpen] = useState(false)
+
   const auth = useContext(AuthContext)
   const { myInfo, loading, error } = useMyInfo()
 
@@ -135,8 +142,25 @@ export default function MyPage() {
     fetchTasks()
   }, [])
 
-  // 내 태스크만 보고 싶으면 아래 주석 해제 (assigneeId가 있을 때)
-  // const myTasks = tasks.filter(t => t.assigneeId === myInfo.id)
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setProjectsLoading(true)
+      try {
+        const res = await axios.get("/api/project/all")
+        if (res.data.resultCode === "SUCCESS") {
+          setProjects(res.data.data)
+        } else {
+          setProjectsError(res.data.message || "프로젝트를 불러오지 못했습니다.")
+        }
+      } catch (e: any) {
+        setProjectsError(e?.response?.data?.message || "프로젝트를 불러오지 못했습니다.")
+      } finally {
+        setProjectsLoading(false)
+      }
+    }
+    fetchProjects()
+  }, [])
+
   const myTasks = tasks // 전체 태스크
   const sortedTasks = [...myTasks].sort((a, b) => {
     const aDate = new Date(a.lastModifiedDate || a.createdDate || 0).getTime();
@@ -189,6 +213,59 @@ export default function MyPage() {
   }
   if (error) return <div>{error}</div>
   if (!myInfo) return <div>내 정보가 없습니다.</div>
+
+  const openProjectDetail = (project: Project) => {
+    setSelectedProject(project)
+    setIsProjectDetailDialogOpen(true)
+  }
+
+  const handleUpdateProject = async (project: Project) => {
+    setProjectsLoading(true)
+    try {
+      const response = await axios.put(`/api/project/${project.id}`, {
+        projectName: project.name,
+        projectDesc: project.description,
+        createdDate: project.createdDate,
+        updatedDate: project.updatedDate,
+        tasks: project.tasks
+      })
+      
+      if (response.data?.resultCode === "SUCCESS") {
+        // API 응답으로 상태 업데이트
+        const updatedProject = response.data.data
+        setProjects(prev => prev.map(p => 
+          p.id === project.id ? { ...updatedProject } : p
+        ))
+        setIsProjectDetailDialogOpen(false)
+        setSelectedProject(updatedProject)
+      } else {
+        alert(response.data?.message || "프로젝트 수정에 실패했습니다.")
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "프로젝트 수정 중 오류가 발생했습니다.")
+    } finally {
+      setProjectsLoading(false)
+    }
+  }
+  
+  const handleDeleteProject = async (project: Project) => {
+    if (!window.confirm("프로젝트를 삭제하면 프로젝트에 포함된 태스크들도 삭제됩니다. 정말 삭제하시겠습니까?")) return
+    setProjectsLoading(true)
+    try {
+      const response = await axios.delete(`/api/project/${project.id}`)
+      if (response.data?.resultCode === "SUCCESS") {
+        setProjects(response.data.data)
+        setIsProjectDetailDialogOpen(false)
+        setSelectedProject(null)
+      } else {
+        alert(response.data?.message || "프로젝트 삭제에 실패했습니다.")
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "프로젝트 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setProjectsLoading(false)
+    }
+  }
 
   return (
     <RequireAuth>
@@ -258,7 +335,8 @@ export default function MyPage() {
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="mb-6">
                   <TabsTrigger value="overview">개요</TabsTrigger>
-                  <TabsTrigger value="tasks">내 태스크</TabsTrigger>
+                  <TabsTrigger value="projects">프로젝트</TabsTrigger>
+                  <TabsTrigger value="tasks">태스크</TabsTrigger>
                   <TabsTrigger value="settings">설정</TabsTrigger>
                 </TabsList>
 
@@ -355,7 +433,7 @@ export default function MyPage() {
                 <TabsContent value="tasks">
                   <Card>
                     <CardHeader>
-                      <CardTitle>전체 태스크</CardTitle>
+                      <CardTitle className="text-base">내 태스크</CardTitle>
                       <CardDescription>생성한 모든 태스크를 확인할 수 있습니다.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -383,6 +461,38 @@ export default function MyPage() {
                                 </div>
                                 {task.description && (
                                   <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="projects">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">내 프로젝트</CardTitle>
+                      <CardDescription>생성한 모든 프로젝트를 확인할 수 있습니다.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {projects.length === 0 ? (
+                          <div className="text-muted-foreground text-center py-8">프로젝트가 없습니다.</div>
+                        ) : (
+                          projects.map((project) => (
+                            <div key={project.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer group hover:border-primary transition-colors" onClick={() => openProjectDetail(project)}>
+                              <div className="flex-1">
+                                <div className="flex justify-between">
+                                  <h4 className="font-medium">{project.name}</h4>
+                                  <span className="text-xs text-muted-foreground">
+                                    {project.lastModifiedDate ? `수정: ${formatRelativeDate(project.lastModifiedDate)}` : project.createdDate ? `생성: ${formatRelativeDate(project.createdDate)}` : ""}
+                                  </span>
+                                </div>
+                                {project.description && (
+                                  <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                                 )}
                               </div>
                             </div>
@@ -463,8 +573,16 @@ export default function MyPage() {
           </div>
         </div>
       </div>
+
+      {selectedProject && (
+              <ProjectDetailDialog
+                open={isProjectDetailDialogOpen}
+                onOpenChange={setIsProjectDetailDialogOpen}
+                project={selectedProject}
+                onUpdateProject={handleUpdateProject}
+                onDeleteProject={handleDeleteProject}
+              />
+            )}
     </RequireAuth>
   )
 }
-
-

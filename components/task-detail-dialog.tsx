@@ -48,6 +48,7 @@ export function TaskDetailDialog({
   const [dueDate, setDueDate] = useState<Date | null>(task.dueDate ? new Date(task.dueDate) : null)
   const [estimatedTimeHours, setEstimatedTimeHours] = useState<number | null>(task.estimatedTimeHours || null)
   const [actualTimeHours, setActualTimeHours] = useState<number | null>(task.actualTimeHours || null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (task) {
@@ -167,7 +168,7 @@ export function TaskDetailDialog({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus />
+                    <Calendar mode="single" selected={dueDate ? new Date(dueDate) : undefined} onSelect={(date) => setDueDate(date || null)} initialFocus />
                   </PopoverContent>
                 </Popover>
               </div>
@@ -236,9 +237,10 @@ export function TaskDetailDialog({
                 size="sm"
                 className="flex items-center gap-1"
                 onClick={() => onDeleteTask(task.id)}
+                disabled={loading}
               >
                 <Trash2 className="h-4 w-4" />
-                삭제
+                {loading ? "삭제 중..." : "삭제"}
               </Button>
 
               {onAddSubtask && (
@@ -258,7 +260,9 @@ export function TaskDetailDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 취소
               </Button>
-              <Button type="submit">저장</Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "수정 중..." : "수정"}
+              </Button>
             </div>
           </DialogFooter>
         </form>
