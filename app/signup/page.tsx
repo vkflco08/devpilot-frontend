@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import axios from "@/lib/axiosInstance"
 import { Loader2 } from "lucide-react"
+import Navbar from '@/components/layout/Navbar'
 
 const ROLE_OPTIONS = ["개발자", "디자이너", "PM", "기타"];
 
@@ -99,6 +100,8 @@ export default function SignUpPage() {
   }
 
   return (
+    <>
+    <Navbar />
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
@@ -236,5 +239,6 @@ export default function SignUpPage() {
         </CardFooter>
       </Card>
     </div>
+    </>
   )
 }

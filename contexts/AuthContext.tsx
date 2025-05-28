@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAuthenticated(false);
         localStorage.removeItem('task-manager-accessToken');
         localStorage.removeItem('task-manager-refreshToken');
-        window.location.href = '/login';
+        window.location.href = '/landing';
         return;
       }
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/member/logout`, {
@@ -47,13 +47,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAuthenticated(false);
       localStorage.removeItem('task-manager-accessToken');
       localStorage.removeItem('task-manager-refreshToken');
-      window.location.href = '/login';
+      window.location.href = '/landing';
     } catch (error) {
       console.error('There was a problem with the logout request:', error);
       setIsAuthenticated(false);
       localStorage.removeItem('task-manager-accessToken');
       localStorage.removeItem('task-manager-refreshToken');
-      window.location.href = '/login';
+      window.location.href = '/landing';
     }
   };
 

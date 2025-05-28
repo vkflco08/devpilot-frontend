@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { AuthContext } from "@/contexts/AuthContext"
 import axios from "@/lib/axiosInstance"
 import { Loader2 } from "lucide-react"
+import Navbar from '@/components/layout/Navbar'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -52,6 +53,8 @@ export default function LoginPage() {
   }
 
   return (
+    <>
+    <Navbar />
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
@@ -83,5 +86,6 @@ export default function LoginPage() {
         </CardFooter>
       </Card>
     </div>
+    </>
   )
 }

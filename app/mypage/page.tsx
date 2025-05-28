@@ -148,7 +148,6 @@ export default function MyPage() {
       try {
         const res = await axios.get("/api/project/all")
         if (res.data.resultCode === "SUCCESS") {
-          console.log(res.data.data)
           setProjects(res.data.data)
         } else {
           setProjectsError(res.data.message || "프로젝트를 불러오지 못했습니다.")
