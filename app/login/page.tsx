@@ -38,8 +38,8 @@ export default function LoginPage() {
       })
 
       if (response.data.resultCode === "SUCCESS") {
-        const { accessToken, refreshToken } = response.data.data
-        login(accessToken, refreshToken)
+        const { accessToken } = response.data.data
+        login(accessToken)
         router.push("/")
       } else {
         alert(response.data.message || "로그인 실패")

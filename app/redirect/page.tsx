@@ -10,19 +10,18 @@ export default function OAuth2RedirectPage() {
   const router = useRouter()
   const params = useSearchParams()
   const accessToken = params.get("accessToken")
-  const refreshToken = params.get("refreshToken")
 
   const authContext = useContext(AuthContext)
 
   useEffect(() => {
-    if (accessToken && refreshToken && authContext) {
-      authContext.login(accessToken, refreshToken)
+    if (accessToken && authContext) {
+      authContext.login(accessToken)
       router.replace("/")
     } else {
       alert("소셜 로그인 실패: 토큰 없음")
       router.replace("/login")
     }
-  }, [accessToken, refreshToken])
+  }, [accessToken])
 
   return <LoadingSpinner text="소셜 로그인 처리 중..." />
 }
