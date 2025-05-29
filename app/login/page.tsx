@@ -11,7 +11,6 @@ import { Loader2 } from "lucide-react"
 import Navbar from '@/components/layout/Navbar'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { FcGoogle } from "react-icons/fc"
-import { SiKakaotalk } from "react-icons/si"
 
 export default function LoginPage() {
   const router = useRouter()
