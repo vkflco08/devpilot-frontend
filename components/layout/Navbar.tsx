@@ -1,6 +1,5 @@
 "use client"
 
-import Link from 'next/link'
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -9,7 +8,6 @@ import { PlusCircle } from "lucide-react"
 export default function Navbar() {
   const { theme, systemTheme } = useTheme()
   const resolved = theme === "system" ? systemTheme : theme
-  const textClass = resolved === "dark" ? "text-gray-300" : "text-muted-foreground"
 
   return (
     <div className="border-b">

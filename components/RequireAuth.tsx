@@ -10,7 +10,7 @@ export default function RequireAuth({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (auth && !auth.isLoading && !auth.isAuthenticated) {
-      router.replace("/login");
+      router.replace("/landing");
     }
   }, [auth, router]);
 

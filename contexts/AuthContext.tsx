@@ -6,7 +6,7 @@ import axios from '@/lib/axiosInstance';
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (accessToken: string, refreshToken: string) => void;
+  login: (accessToken: string) => void;
   logout: () => void;
 }
 
@@ -22,9 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (accessToken: string, refreshToken: string) => {
+  
+  const login = (accessToken: string) => {
     localStorage.setItem('task-manager-accessToken', accessToken);
-    localStorage.setItem('task-manager-refreshToken', refreshToken);
     setIsAuthenticated(true);
   };
 
@@ -32,29 +32,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const accessToken = localStorage.getItem('task-manager-accessToken');
       if (!accessToken) {
-        setIsAuthenticated(false);
-        localStorage.removeItem('task-manager-accessToken');
-        localStorage.removeItem('task-manager-refreshToken');
-        window.location.href = '/landing';
+        handleLogoutCleanup();
         return;
       }
+
       await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/member/logout`, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
+        withCredentials: true
       });
-      setIsAuthenticated(false);
-      localStorage.removeItem('task-manager-accessToken');
-      localStorage.removeItem('task-manager-refreshToken');
-      window.location.href = '/landing';
+
+      handleLogoutCleanup();
     } catch (error) {
-      console.error('There was a problem with the logout request:', error);
-      setIsAuthenticated(false);
-      localStorage.removeItem('task-manager-accessToken');
-      localStorage.removeItem('task-manager-refreshToken');
-      window.location.href = '/landing';
+      console.error('Logout error:', error);
+      handleLogoutCleanup();
     }
+  };
+
+  const handleLogoutCleanup = () => {
+    localStorage.removeItem('task-manager-accessToken');
+    setIsAuthenticated(false);
+    window.location.href = '/landing';
   };
 
   return (
