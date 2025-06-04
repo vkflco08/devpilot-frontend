@@ -190,37 +190,9 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
       } finally {
         setTaskLoading(false);
       }
-    } else if (active.id !== over.id) {
-      // 같은 컬럼 내 순서 변경(로컬 상태만 변경)
-      const activeContainer = active.data.current?.sortable.containerId;
-      const overContainer = over.data.current?.sortable.containerId;
-      const activeIndex = active.data.current?.sortable.index;
-      const overIndex = over.data.current?.sortable.index;
-      if (activeContainer && activeContainer === overContainer && activeIndex !== undefined && overIndex !== undefined) {
-        const column = activeContainer as TaskStatus;
-        let tasksInColumn: Task[] = [];
-        if (column === TaskStatus.TODO) {
-          tasksInColumn = [...todoTasks];
-        } else if (column === TaskStatus.DOING) {
-          tasksInColumn = [...doingTasks];
-        } else {
-          tasksInColumn = [...doneTasks];
-        }
-        const reordered = arrayMove(tasksInColumn, activeIndex, overIndex);
-        setTasks((prev) => {
-          const updatedTasks = JSON.parse(JSON.stringify(prev)) as Task[];
-          const rootTasksToUpdate = getRootTasks(updatedTasks).filter((t) => t.status === column);
-          for (let i = 0; i < rootTasksToUpdate.length; i++) {
-            const taskIndex = updatedTasks.findIndex((t) => t.id === rootTasksToUpdate[i].id);
-            if (taskIndex !== -1 && i < reordered.length) {
-              updatedTasks[taskIndex] = reordered[i];
-            }
-          }
-          return updatedTasks;
-        });
-      }
-    }
-  }
+    } 
+  }    
+  
 
   const handleCreateTask = async (newTask: Task) => {
     setTaskLoading(true)
@@ -317,13 +289,6 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     setExpandedTaskId(expandedTaskId === taskId ? null : taskId)
   }
 
-  // Calculate completion percentage based on all tasks including subtasks
-  const allTasks = flattenTaskTree(Array.isArray(tasks) ? tasks : []);
-  const completionPercentage =
-    allTasks.length > 0
-      ? Math.round((allTasks.filter((t) => t.status === TaskStatus.DONE).length / allTasks.length) * 100)
-      : 0
-
   // Find the expanded task if any
   const expandedTask = expandedTaskId ? findTaskById(filteredTasks, expandedTaskId) : null
 
@@ -400,8 +365,6 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
 
   // 태스크 생성 다이얼로그에 넘길 프로젝트 목록 (id, name만)
   const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }))
-
-  // if (error) return <div className="flex items-center justify-center h-[60vh] text-lg text-red-500">{error}</div>;
 
   return (
     <div className="min-h-screen bg-background">

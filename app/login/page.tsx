@@ -1,20 +1,28 @@
 'use client'
 
 import { useRouter } from "next/navigation"
-import { useContext, useState } from "react"
+import { useContext, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AuthContext } from "@/contexts/AuthContext"
 import axios from "@/lib/axiosInstance"
-import { Loader2 } from "lucide-react"
 import Navbar from '@/components/layout/Navbar'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { FcGoogle } from "react-icons/fc"
+import { useMyInfo } from "@/lib/hooks/useMyInfo"
 
 export default function LoginPage() {
   const router = useRouter()
   const authContext = useContext(AuthContext)
+  const { myInfo, loading: myInfoLoading } = useMyInfo()
+
+  useEffect(() => {
+    if (myInfo && !myInfoLoading) {
+      router.push('/')
+    }
+  }, [myInfo, myInfoLoading, router])
+
   if (!authContext) {
     return (
       <LoadingSpinner text="인증 정보 로딩 중..." />
@@ -39,13 +47,13 @@ export default function LoginPage() {
         const { accessToken } = response.data.data
         login(accessToken)
         router.push("/")
+        router.refresh()
       } else {
         alert(response.data.message || "로그인 실패")
       }
     } catch (err) {
       console.log(err)
       alert("로그인 중 오류가 발생했습니다.")
-      window.location.reload()
     } finally {
       setLoading(false)
     }

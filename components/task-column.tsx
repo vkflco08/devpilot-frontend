@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useDroppable } from "@dnd-kit/core"
 import type { TaskStatus } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -30,7 +29,9 @@ export function TaskColumn({ title, status, count, children }: TaskColumnProps) 
         <h3 className="font-medium">{title}</h3>
         <span className="text-sm px-2 py-1 bg-muted rounded-full">{count}</span>
       </div>
-      <div className="overflow-y-auto p-4 space-y-3 h-full">{children}</div>
+      <div className="overflow-y-auto p-4 space-y-3 h-full transition-all duration-200">
+        {children}
+      </div>
     </div>
   )
 }
