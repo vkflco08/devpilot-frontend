@@ -10,7 +10,7 @@ export default function OAuthCallback() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('accessToken');
+    const accessToken = urlParams.get('task-manager-accessToken');
 
     if (!accessToken) {
       console.error('Missing accessToken from redirect');

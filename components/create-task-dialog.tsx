@@ -76,7 +76,8 @@ export function CreateTaskDialog({
     }
   }, [open, parentTask, defaultProjectId])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true)
     e.preventDefault()
     if (!title.trim()) return
 
@@ -94,8 +95,14 @@ export function CreateTaskDialog({
       projectId: selectedProjectId === 'none' ? undefined : selectedProjectId,
     }
 
-    onCreateTask(newTask)
-    resetForm()
+    try {
+      await onCreateTask(newTask)
+      resetForm()
+    } catch (error) {
+      console.error("태스크 생성 실패:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const resetForm = () => {

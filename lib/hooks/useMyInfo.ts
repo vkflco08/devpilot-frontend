@@ -19,17 +19,23 @@ export function useMyInfo() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    axios.get("/api/member/info")
-      .then(res => {
+    const fetchMyInfo = async () => {
+      try {
+        const res = await axios.get("/api/member/info");
         if (res.data.resultCode === "SUCCESS") {
           setMyInfo(res.data.data);
         } else {
-          setError(res.data.message || "내 정보 불러오기 실패");
+          throw new Error(res.data.message || "내 정보 불러오기 실패");
         }
-      })
-      .catch(() => setError("내 정보 불러오기 실패"))
-      .finally(() => setLoading(false));
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "내 정보 불러오기 실패");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyInfo();
   }, []);
 
   return { myInfo, loading, error };
-} 
+}

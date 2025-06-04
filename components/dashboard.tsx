@@ -369,6 +369,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
 
   // 프로젝트 추가 핸들러
   const handleAddProject = async () => {
+    setTaskLoading(true)
     if (!projectName.trim()) {
       alert("프로젝트명을 입력하세요.")
       return
@@ -393,6 +394,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
       alert(message)
     } finally {
       setLoading(false)
+      setTaskLoading(false)
     }
   }
 
@@ -584,8 +586,8 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleAddProject} type="button" disabled={loading}>
-              {loading ? "추가 중..." : "추가"}
+            <Button onClick={handleAddProject} type="button" disabled={taskLoading}>
+              {taskLoading ? "추가 중..." : "추가"}
             </Button>
           </DialogFooter>
         </DialogContent>

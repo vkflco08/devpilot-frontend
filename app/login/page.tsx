@@ -20,7 +20,7 @@ export default function LoginPage() {
       <LoadingSpinner text="인증 정보 로딩 중..." />
     )
   }
-  const { login, logout } = authContext
+  const { login } = authContext
 
   const [loginId, setLoginId] = useState("")
   const [password, setPassword] = useState("")
@@ -29,7 +29,6 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
       const response = await axios.post("/api/member/login", {
         loginId: loginId,
@@ -44,20 +43,12 @@ export default function LoginPage() {
         alert(response.data.message || "로그인 실패")
       }
     } catch (err) {
-      logout()
+      console.log(err)
       alert("로그인 중 오류가 발생했습니다.")
+      window.location.reload()
     } finally {
       setLoading(false)
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-200">
-        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <span className="text-base text-muted-foreground">잠시만 기다려주세요...</span>
-      </div>
-    )
   }
 
   return (

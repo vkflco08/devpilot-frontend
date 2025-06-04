@@ -188,7 +188,7 @@ export default function MyPage() {
   const todoTasks = sortedTasks.filter((t) => t.status === TaskStatus.TODO).length
   const completionRate = assignedTasks > 0 ? Math.round((completedTasks / assignedTasks) * 100) : 0;
 
-  if ((loading || tasksLoading)) {
+  if ((loading || tasksLoading || projectsLoading)) {
     if (!mounted) return null
     const resolved = theme === "system" ? systemTheme : theme
     const bgClass = resolved === "dark"
@@ -242,7 +242,8 @@ export default function MyPage() {
     try {
       const response = await axios.delete(`/api/project/${project.id}`)
       if (response.data?.resultCode === "SUCCESS") {
-        setProjects(response.data.data)
+        // 현재 projects 상태에서 삭제된 프로젝트를 제거
+        setProjects(prev => prev.filter(p => p.id !== project.id))
         setIsProjectDetailDialogOpen(false)
         setSelectedProject(null)
       } else {
@@ -467,24 +468,33 @@ export default function MyPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {projects.length === 0 ? (
-                          <div className="text-muted-foreground text-center py-8">프로젝트가 없습니다.</div>
-                        ) : (
-                          projects.map((project) => (
-                            <div key={project.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer group hover:border-primary transition-colors" onClick={() => openProjectDetail(project)}>
-                              <div className="flex-1">
-                                <div className="flex justify-between">
-                                  <h4 className="font-medium">{project.name}</h4>
-                                  <span className="text-xs text-muted-foreground">
-                                    {project.lastModifiedDate ? `수정: ${formatRelativeDate(project.lastModifiedDate)}` : project.createdDate ? `생성: ${formatRelativeDate(project.createdDate)}` : ""}
-                                  </span>
+                        {projectsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                            <span className="text-muted-foreground">프로젝트를 불러오는 중입니다...</span>
+                          </div>
+                        ) : projects ? (
+                          projects.length === 0 ? (
+                            <div className="text-muted-foreground text-center py-8">프로젝트가 없습니다.</div>
+                          ) : (
+                            projects.map((project) => (
+                              <div key={project.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer group hover:border-primary transition-colors" onClick={() => openProjectDetail(project)}>
+                                <div className="flex-1">
+                                  <div className="flex justify-between">
+                                    <h4 className="font-medium">{project.name}</h4>
+                                    <span className="text-xs text-muted-foreground">
+                                      {project.lastModifiedDate ? `수정: ${formatRelativeDate(project.lastModifiedDate)}` : project.createdDate ? `생성: ${formatRelativeDate(project.createdDate)}` : ""}
+                                    </span>
+                                  </div>
+                                  {project.description && (
+                                    <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
+                                  )}
                                 </div>
-                                {project.description && (
-                                  <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
-                                )}
                               </div>
-                            </div>
-                          ))
+                            ))
+                          )
+                        ) : (
+                          <div className="text-muted-foreground text-center py-8">프로젝트를 불러오지 못했습니다.</div>
                         )}
                       </div>
                     </CardContent>

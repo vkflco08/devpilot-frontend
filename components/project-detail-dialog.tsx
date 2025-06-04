@@ -45,6 +45,7 @@ export function ProjectDetailDialog({
   }, [project])
 
   const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true)
     e.preventDefault()
     const updatedProject: Project = {
       id: project?.id || Date.now(),
@@ -54,12 +55,26 @@ export function ProjectDetailDialog({
       updatedDate: new Date().toISOString(),
       tasks: project?.tasks || []
     }
-    onUpdateProject(updatedProject)
+    try {
+      await onUpdateProject(updatedProject)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "프로젝트 수정 중 오류가 발생했습니다.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDelete = async () => {
     if (!project) return
-    onDeleteProject(project)
+
+    try {
+      setLoading(true)
+      await onDeleteProject(project)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "프로젝트 삭제 중 오류가 발생했습니다.")
+    } finally {
+      setLoading(false)
+    }
     onOpenChange(false)
   }
 

@@ -42,10 +42,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
         withCredentials: true
       });
+      document.cookie = 'task-manager-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
       handleLogoutCleanup();
     } catch (error) {
-      console.error('Logout error:', error);
       handleLogoutCleanup();
     }
   };

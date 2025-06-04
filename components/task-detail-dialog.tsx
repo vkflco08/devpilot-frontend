@@ -63,7 +63,8 @@ export function TaskDetailDialog({
     }
   }, [task])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true)
     e.preventDefault()
     if (!title.trim()) return
 
@@ -79,7 +80,8 @@ export function TaskDetailDialog({
       actualTimeHours: actualTimeHours || undefined,
     }
 
-    onUpdateTask(updatedTask)
+    await onUpdateTask(updatedTask)
+    setLoading(false)
   }
 
   return (
