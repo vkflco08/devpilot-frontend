@@ -86,7 +86,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
         } else {
           setError(res.data.message || "프로젝트 태스크를 불러오지 못했습니다.")
         }
-      }
+      } 
     } catch (e: any) {
       setError(e?.response?.data?.message || "태스크 목록을 불러오지 못했습니다.")
     } finally {

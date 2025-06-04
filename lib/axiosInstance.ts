@@ -1,4 +1,8 @@
 import axios from 'axios';
+import { AuthContext } from '@/contexts/AuthContext';
+import { useContext } from 'react';
+
+const auth = useContext(AuthContext)
 
 const instance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
@@ -34,8 +38,7 @@ instance.interceptors.response.use(
           return instance(originalRequest);
         } catch (e) {
           isRefreshing = false;
-          localStorage.removeItem('task-manager-accessToken');
-          localStorage.removeItem('task-manager-refreshToken');
+          auth?.logout()
           window.location.href = '/login';
         }
       }

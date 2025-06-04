@@ -37,7 +37,7 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <TabsList>
                   <TabsTrigger value="dashboard">대시보드</TabsTrigger>
-                  <TabsTrigger value="tree">트리 뷰</TabsTrigger>
+                  {/* <TabsTrigger value="tree">트리 뷰</TabsTrigger> */}
                 </TabsList>
                 <ThemeToggle />
                 <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center gap-2">
