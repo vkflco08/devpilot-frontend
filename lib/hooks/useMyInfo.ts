@@ -29,7 +29,7 @@ export function useMyInfo() {
         }
       } catch (error) {
         setError(error instanceof Error ? error.message : "내 정보 불러오기 실패");
-      } finally {
+      } finally { 
         setLoading(false);
       }
     };

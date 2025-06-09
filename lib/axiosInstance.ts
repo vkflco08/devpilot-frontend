@@ -131,7 +131,11 @@ instance.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem('task-manager-accessToken');
         document.cookie = 'task-manager-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-        window.location.href = '/login';
+
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        }
+        
         throw refreshError;
       }
     }

@@ -126,18 +126,22 @@ export function TaskCard({
                   </Badge>
                 ))}
             </div>
+            {task.estimatedTimeHours && task.dueDate && (
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+            {task.estimatedTimeHours && (
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 <span>{task.estimatedTimeHours}시간</span>
               </div>
-              {task.dueDate && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>{format(new Date(task.dueDate), "yyyy-MM-dd")}</span>
-                </div>
-              )}
+            )}
+            {task.dueDate && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>{format(new Date(task.dueDate), "yyyy-MM-dd")}</span>
+              </div>
+            )}
             </div>
+            )}
           </div>
         </div>
       </CardContent>
