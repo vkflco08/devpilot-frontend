@@ -19,6 +19,7 @@ import axios from "@/lib/axiosInstance"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useTheme } from "next-themes"
+import { FcGoogle } from "react-icons/fc"
 
 function formatRelativeDate(dateString?: string | null) {
   if (!dateString) return "-";
@@ -282,6 +283,14 @@ export default function MyPage() {
                   <Button variant="outline" className="w-full flex items-center gap-2" onClick={() => setEditOpen(true)}>
                     <Edit className="h-4 w-4" />
                     프로필 편집
+                  </Button>
+                  <Button
+                    className="w-full flex items-center justify-center gap-2"
+                    variant="outline"
+                    onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/oauth2/authorization/google`}
+                  >
+                    <FcGoogle size={20} />
+                    Google 아이디 연동하기
                   </Button>
                   <ProfileEditDialog open={editOpen} onOpenChange={setEditOpen} myInfo={myInfo} onSave={handleProfileSave} />
                   <Button variant="destructive" className="w-full flex items-center gap-2" onClick={auth?.logout}>
