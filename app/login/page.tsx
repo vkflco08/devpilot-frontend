@@ -49,7 +49,7 @@ export default function LoginPage() {
         router.push("/")
         router.refresh()
       } else {
-        alert(response.data.message || "로그인 실패")
+        alert(response.data.message || "아이디와 비밀번호를 확인해주세요.")
       }
     } catch (err) {
       console.log(err)
@@ -84,10 +84,6 @@ export default function LoginPage() {
             <Button className="w-full" type="submit" disabled={loading}>
               {loading ? "로그인 중..." : "로그인"}
             </Button>
-          </form>
-
-          {/* 소셜 로그인 */}
-          <div className="my-6 space-y-3">
             <Button
               className="w-full flex items-center justify-center gap-2"
               variant="outline"
@@ -103,7 +99,7 @@ export default function LoginPage() {
               <SiKakaotalk size={20} />
               Kakao로 로그인
             </Button> */}
-          </div>
+          </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <Button variant="ghost" onClick={() => router.push("/signup")}>
