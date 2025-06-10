@@ -284,14 +284,16 @@ export default function MyPage() {
                     <Edit className="h-4 w-4" />
                     프로필 편집
                   </Button>
+                  {!myInfo.providers?.includes("GOOGLE") && (
                   <Button
                     className="w-full flex items-center justify-center gap-2"
                     variant="outline"
-                    onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/oauth2/authorization/google`}
+                    onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/oauth2/authorization/google?state=bind:${myInfo.id}`}
                   >
                     <FcGoogle size={20} />
                     Google 아이디 연동하기
                   </Button>
+                  )}
                   <ProfileEditDialog open={editOpen} onOpenChange={setEditOpen} myInfo={myInfo} onSave={handleProfileSave} />
                   <Button variant="destructive" className="w-full flex items-center gap-2" onClick={auth?.logout}>
                     로그아웃
