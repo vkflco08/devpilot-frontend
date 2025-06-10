@@ -52,7 +52,7 @@ export default function LoginPage() {
         alert(response.data.message || "아이디와 비밀번호를 확인해주세요.")
       }
     } catch (err) {
-      console.log(err)
+      // console.log(err)
       alert("로그인 중 오류가 발생했습니다.")
     } finally {
       setLoading(false)
