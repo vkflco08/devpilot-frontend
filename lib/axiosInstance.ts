@@ -30,17 +30,16 @@ const onTokenRefreshed = (token: string) => {
 
 // 토큰 갱신
 const refreshAccessToken = async (): Promise<string> => {
-  const refreshToken = getCookie('task-manager-refreshToken');
-  if (!refreshToken) {
-    throw new Error('Refresh token not found');
-  }
-
   try {
-    // 새로운 axios 인스턴스를 사용하여 순환 참조 방지
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/refresh`,
-      { refreshToken },
-      { withCredentials: true }
+      {},
+      { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
     
     if (response.data?.resultCode === 'SUCCESS' && response.data.data?.accessToken) {
@@ -48,6 +47,7 @@ const refreshAccessToken = async (): Promise<string> => {
       localStorage.setItem('task-manager-accessToken', newAccessToken);
       return newAccessToken;
     }
+    
     throw new Error('Failed to refresh token');
   } catch (error) {
     // 토큰 갱신 실패 시 로그아웃 처리
@@ -67,6 +67,11 @@ const refreshAccessToken = async (): Promise<string> => {
 // 요청 인터셉터
 instance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // 로그인 페이지로의 요청은 토큰을 붙이지 않음
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) {
+      return config;
+    }
+    
     const token = localStorage.getItem('task-manager-accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -82,19 +87,31 @@ instance.interceptors.request.use(
 instance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & { 
+      _retry?: boolean,
+      _isRetry?: boolean
+    };
     
-    // 401 에러가 아니거나 이미 재시도한 요청인 경우
-    if (error.response?.status !== 401 || !originalRequest || originalRequest._retry) {
+    // 이미 재시도한 요청이거나, 401/403이 아니거나, 로그인 페이지 요청인 경우
+    if (
+      originalRequest._retry || 
+      originalRequest._isRetry ||
+      ![401, 403].includes(error.response?.status as number) ||
+      (typeof window !== 'undefined' && window.location.pathname.startsWith('/login'))
+    ) {
       return Promise.reject(error);
     }
 
-    // 로그인 페이지로의 요청은 무시
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) {
+    // 무한 루프 방지
+    if (originalRequest.url?.includes('/auth/refresh')) {
+      // 리프레시 토큰 요청 자체가 실패한 경우
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        localStorage.removeItem('task-manager-accessToken');
+        document.cookie = 'task-manager-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }
       return Promise.reject(error);
     }
-
-    originalRequest._retry = true;
 
     // 이미 토큰 갱신 중인 경우
     if (isRefreshing) {
@@ -103,20 +120,24 @@ instance.interceptors.response.use(
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
           }
+          originalRequest._isRetry = true;
           resolve(instance(originalRequest));
         });
       });
     }
 
     isRefreshing = true;
+    originalRequest._retry = true;
 
     try {
       const newToken = await refreshAccessToken();
       onTokenRefreshed(newToken);
       
+      // 원래 요청 재시도
       if (originalRequest.headers) {
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
       }
+      originalRequest._isRetry = true;
       
       return instance(originalRequest);
     } catch (refreshError) {
