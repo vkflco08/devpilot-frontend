@@ -257,6 +257,17 @@ export default function MyPage() {
     }
   }
 
+  const handleBindGoogleAccount = async () => {
+    try {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/bind/google`)
+      const redirectUrl = response.data.data
+      console.log(redirectUrl)
+      window.location.href = redirectUrl
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "계정 연동 중 오류가 발생했습니다.")
+    }
+  };
+
   return (
     <RequireAuth>
       <div className="min-h-screen bg-background">
@@ -288,7 +299,7 @@ export default function MyPage() {
                   <Button
                     className="w-full flex items-center justify-center gap-2"
                     variant="outline"
-                    onClick={() => window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/oauth2/authorization/google?state=bind:${myInfo.id}`}
+                    onClick={handleBindGoogleAccount}
                   >
                     <FcGoogle size={20} />
                     Google 아이디 연동하기
