@@ -12,6 +12,7 @@ export interface MyInfo {
   phoneNumber: string;
   department: string;
   description: string;
+  providers: string[];
 }
 
 export function useMyInfo() {
@@ -22,23 +23,29 @@ export function useMyInfo() {
 
   useEffect(() => {
     const fetchMyInfo = async () => {
-      // 로그인 페이지인 경우 요청을 보내지 않음
-      if (pathname === '/login') {
+      const token = localStorage.getItem('task-manager-accessToken');
+      if (!token) {
         setLoading(false);
+        setError('로그인이 필요합니다.');
         return;
       }
 
       try {
-        const res = await axios.get("/api/member/info");
+        const res = await axios.get("/api/member/info", {
+          validateStatus: (status) => status < 500
+        });
+
+        // console.log(res.data.data)
+        
         if (res.data.resultCode === "SUCCESS") {
           setMyInfo(res.data.data);
         } else {
           throw new Error(res.data.message || "내 정보 불러오기 실패");
         }
       } catch (error) {
-        // 에러 메시지는 axiosInstance의 인터셉터에서 처리
-        setError("사용자 정보를 불러오는데 실패했습니다.");
-      } finally { 
+        const errorMessage = error instanceof Error ? error.message : "내 정보 불러오기 실패";
+        setError(errorMessage);
+      } finally 
         setLoading(false);
       }
     };
