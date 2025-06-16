@@ -45,7 +45,7 @@ export function useMyInfo() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "내 정보 불러오기 실패";
         setError(errorMessage);
-      } finally 
+      } finally {
         setLoading(false);
       }
     };
