@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input"
 import { useTheme } from "next-themes"
 import { FcGoogle } from "react-icons/fc"
+import { useSearchParams } from "next/navigation"
 
 function formatRelativeDate(dateString?: string | null) {
   if (!dateString) return "-";
@@ -102,6 +103,7 @@ function ProfileEditDialog({ open, onOpenChange, myInfo, onSave }: { open: boole
 export default function MyPage() {
 
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedProjectId, setSelectedProjectId] = useState<'all' | number>('all');
   const [tasks, setTasks] = useState<any[]>([])
@@ -120,9 +122,34 @@ export default function MyPage() {
   const [editOpen, setEditOpen] = useState(false)
   const handleProfileSave = () => { window.location.reload() } // 또는 useMyInfo refetch
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
   const { theme, systemTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    const error = searchParams.get('error')
+    const status = searchParams.get('status')
+    
+    if (error) {
+      // Decode the error message
+      const decodedError = decodeURIComponent(error)
+      setErrorMessage(decodedError)
+      
+      // Clean up URL
+      const url = new URL(window.location.href)
+      url.searchParams.delete('error')
+      url.searchParams.delete('status')
+      window.history.replaceState({}, document.title, url.pathname + url.search)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (errorMessage) {
+      alert(errorMessage)
+    }
+  }, [errorMessage])
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -261,10 +288,11 @@ export default function MyPage() {
     try {
       const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/bind/google`)
       const redirectUrl = response.data.data
-      console.log(redirectUrl)
+      console.log(response)
       window.location.href = redirectUrl
     } catch (e: any) {
-      alert(e?.response?.data?.message || "계정 연동 중 오류가 발생했습니다.")
+      console.error("계정 연동 요청 중 클라이언트 측 오류:", e);
+      alert("네트워크 오류 또는 서버에 연결할 수 없습니다.");
     }
   };
 

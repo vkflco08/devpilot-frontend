@@ -33,7 +33,7 @@ export function useMyInfo() {
           validateStatus: (status) => status < 500
         });
 
-        console.log(res.data.data)
+        // console.log(res.data.data)
         
         if (res.data.resultCode === "SUCCESS") {
           setMyInfo(res.data.data);
