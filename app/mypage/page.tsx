@@ -530,15 +530,19 @@ export default function MyPage() {
                             projects.map((project) => (
                               <div key={project.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer group hover:border-primary transition-colors" onClick={() => openProjectDetail(project)}>
                                 <div className="flex-1">
-                                  <div className="flex justify-between">
+                                  <div className="flex justify-between items-baseline">
                                     <h4 className="font-medium">{project.name}</h4>
+                                    <span className="text-sm text-muted-foreground">{project.tasks?.length || 0}개</span>
+                                  </div>
+                                  <div className="flex justify-between items-baseline mt-1">
+                                    {project.description && (
+                                      <p className="text-sm text-muted-foreground">{project.description}</p>
+                                    )}
                                     <span className="text-xs text-muted-foreground">
-                                      {project.lastModifiedDate ? `수정: ${formatRelativeDate(project.lastModifiedDate)}` : project.createdDate ? `생성: ${formatRelativeDate(project.createdDate)}` : ""}
+                                      {project.lastModifiedDate ? `수정: ${formatRelativeDate(project.lastModifiedDate)}` : 
+                                      project.createdDate ? `생성: ${formatRelativeDate(project.createdDate)}` : ""}
                                     </span>
                                   </div>
-                                  {project.description && (
-                                    <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
-                                  )}
                                 </div>
                               </div>
                             ))

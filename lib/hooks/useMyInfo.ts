@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import axios from "@/lib/axiosInstance";
 
 export interface MyInfo {
@@ -18,6 +19,7 @@ export function useMyInfo() {
   const [myInfo, setMyInfo] = useState<MyInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const fetchMyInfo = async () => {
@@ -43,13 +45,13 @@ export function useMyInfo() {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "내 정보 불러오기 실패";
         setError(errorMessage);
-      } finally {
+      } finally 
         setLoading(false);
       }
     };
 
     fetchMyInfo();
-  }, []);
+  }, [pathname]);
 
   return { myInfo, loading, error };
 }
