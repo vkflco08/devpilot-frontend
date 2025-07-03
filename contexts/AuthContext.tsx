@@ -22,9 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  
   const login = (accessToken: string) => {
     localStorage.setItem('task-manager-accessToken', accessToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
     setIsAuthenticated(true);
   };
 
