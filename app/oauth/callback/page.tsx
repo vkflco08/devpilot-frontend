@@ -12,6 +12,8 @@ export default function OAuthCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const accessToken = urlParams.get('task-manager-accessToken');
 
+    console.log("oauth callback page")
+
     if (!accessToken) {
       console.error('Missing accessToken from redirect');
       router.push('/login');

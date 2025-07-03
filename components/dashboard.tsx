@@ -56,7 +56,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   // 프로젝트 목록 fetch
   const fetchProjects = async () => {
     try {
-      const res = await axios.get("/api/project/all")
+      const res = await axios.get("/api/project/dashboard")
       if (res.data.resultCode === "SUCCESS") {
         setProjects(res.data.data)
       } else {
@@ -192,7 +192,6 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
       }
     } 
   }    
-  
 
   const handleCreateTask = async (newTask: Task) => {
     setTaskLoading(true)

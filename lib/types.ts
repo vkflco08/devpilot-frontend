@@ -4,12 +4,19 @@ export enum TaskStatus {
   DONE = "DONE",
 }
 
+export enum ProjectStatus {
+  ACTIVE = 'ACTIVE',      // 진행 중
+  COMPLETED = 'COMPLETED', // 완료됨
+  ARCHIVED = 'ARCHIVED'   // 보관 또는 숨김
+}
+
 export interface Project {
   id: number
   name: string
   description?: string
   createdDate?: string
   updatedDate?: string
+  status?: ProjectStatus
   tasks?: Task[]
 }
 

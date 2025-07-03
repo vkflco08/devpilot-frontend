@@ -3,6 +3,7 @@
 import { useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { User, Settings, Clock, Calendar, ArrowLeft, CheckCircle, BarChart2, Edit, Mail, Phone, Loader2 } from "lucide-react"
+import { ProjectStatus } from "@/lib/types"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import { type Project } from "@/lib/types"
 import { ProjectDetailDialog } from "@/components/project-detail-dialog"
@@ -174,7 +175,7 @@ export default function MyPage() {
     const fetchProjects = async () => {
       setProjectsLoading(true)
       try {
-        const res = await axios.get("/api/project/all")
+        const res = await axios.get("/api/project/mypage")
         if (res.data.resultCode === "SUCCESS") {
           setProjects(res.data.data)
         } else {
@@ -244,6 +245,7 @@ export default function MyPage() {
       const response = await axios.put(`/api/project/${project.id}`, {
         projectName: project.name,
         projectDescription: project.description,
+        projectStatus: project.status || ProjectStatus.ACTIVE
       })
       
       if (response.data?.resultCode === "SUCCESS") {

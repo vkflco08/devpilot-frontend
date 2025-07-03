@@ -12,7 +12,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { type Project } from "@/lib/types"
+import { ProjectStatus, type Project } from "@/lib/types"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface ProjectDetailDialogProps {
   open: boolean
@@ -32,6 +39,7 @@ export function ProjectDetailDialog({
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState(project?.name || "")
   const [description, setDescription] = useState(project?.description || "")
+  const [status, setStatus] = useState<ProjectStatus>(project?.status || ProjectStatus.ACTIVE)
   const [createdDate, setCreatedDate] = useState(project?.createdDate || "")
   const [updatedDate, setUpdatedDate] = useState(project?.updatedDate || "")
 
@@ -51,6 +59,7 @@ export function ProjectDetailDialog({
       id: project?.id || Date.now(),
       name,
       description,
+      status,
       createdDate,
       updatedDate: new Date().toISOString(),
       tasks: project?.tasks || []
@@ -98,6 +107,26 @@ export function ProjectDetailDialog({
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
             />
+          </div>
+          
+          <div className="grid gap-2">
+            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              상태
+            </label>
+            <Select
+              value={status}
+              onValueChange={(value: ProjectStatus) => setStatus(value)}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="상태 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ProjectStatus.ACTIVE}>진행 중</SelectItem>
+                <SelectItem value={ProjectStatus.COMPLETED}>완료됨</SelectItem>
+                <SelectItem value={ProjectStatus.ARCHIVED}>보관 또는 숨김</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
