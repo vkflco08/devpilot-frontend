@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input"
 import { useTheme } from "next-themes"
 import { FcGoogle } from "react-icons/fc"
 import { useSearchParams } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 function formatRelativeDate(dateString?: string | null) {
   if (!dateString) return "-";
@@ -533,7 +535,22 @@ export default function MyPage() {
                               <div key={project.id} className="flex items-start gap-3 p-3 rounded-md border cursor-pointer group hover:border-primary transition-colors" onClick={() => openProjectDetail(project)}>
                                 <div className="flex-1">
                                   <div className="flex justify-between items-baseline">
-                                    <h4 className="font-medium">{project.name}</h4>
+                                    <div className="flex items-center gap-2">
+                                      <Badge 
+                                        variant={project.status === ProjectStatus.ACTIVE ? "default" : "secondary"}
+                                        className={cn(
+                                          "text-xs",
+                                          project.status === ProjectStatus.ACTIVE && "bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-300",
+                                          project.status === ProjectStatus.COMPLETED && "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300",
+                                          project.status === ProjectStatus.ARCHIVED && "bg-gray-100 text-gray-800 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300"
+                                        )}
+                                      >
+                                        {project.status === ProjectStatus.ACTIVE && "진행중"}
+                                        {project.status === ProjectStatus.COMPLETED && "완료됨"}
+                                        {project.status === ProjectStatus.ARCHIVED && "보관됨"}
+                                      </Badge>
+                                      <h4 className="font-medium">{project.name}</h4>
+                                    </div>
                                     <span className="text-sm text-muted-foreground">{project.tasks?.length || 0}개</span>
                                   </div>
                                   <div className="flex justify-between items-baseline mt-1">
