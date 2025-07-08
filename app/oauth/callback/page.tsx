@@ -10,7 +10,7 @@ export default function OAuthCallback() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('task-manager-accessToken');
+    const accessToken = urlParams.get('task-pilot-accessToken');
 
     console.log("oauth callback page")
 

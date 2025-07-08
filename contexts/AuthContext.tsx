@@ -17,20 +17,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('task-manager-accessToken');
+    const token = localStorage.getItem('task-pilot-accessToken');
     setIsAuthenticated(!!token);
     setIsLoading(false);
   }, []);
 
   const login = (accessToken: string) => {
-    localStorage.setItem('task-manager-accessToken', accessToken);
+    localStorage.setItem('task-pilot-accessToken', accessToken);
     axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
     setIsAuthenticated(true);
   };
 
   const logout = async () => {
     try {
-      const accessToken = localStorage.getItem('task-manager-accessToken');
+      const accessToken = localStorage.getItem('task-pilot-accessToken');
       if (!accessToken) {
         handleLogoutCleanup();
         return;
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
         withCredentials: true
       });
-      document.cookie = 'task-manager-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'task-pilot-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
 
       handleLogoutCleanup();
     } catch (error) {
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleLogoutCleanup = () => {
-    localStorage.removeItem('task-manager-accessToken');
+    localStorage.removeItem('task-pilot-accessToken');
     setIsAuthenticated(false);
     window.location.href = '/landing';
   };
