@@ -16,21 +16,21 @@ export interface Project {
   description?: string
   createdDate?: string
   updatedDate?: string
-  status?: ProjectStatus
+  status: ProjectStatus
   tasks?: Task[]
 }
 
 export interface Task {
   id: number
   title: string
-  description?: string
+  description?: string | null
   status: TaskStatus
-  tags?: string
-  priority?: number // 1 (high) - 5 (low)
-  dueDate?: string
-  estimatedTimeHours?: number
-  actualTimeHours?: number
-  parent?: Task
+  tags?: string | null
+  priority: number // 1 (high) - 5 (low)
+  dueDate?: string | null
+  estimatedTimeHours?: number | null
+  actualTimeHours?: number | null
+  parent?: Task | null
   subTasks: Task[]
   projectId?: number
 }
