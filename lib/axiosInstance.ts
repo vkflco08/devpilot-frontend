@@ -44,15 +44,15 @@ const refreshAccessToken = async (): Promise<string> => {
     
     if (response.data?.resultCode === 'SUCCESS' && response.data.data?.accessToken) {
       const newAccessToken = response.data.data.accessToken;
-      localStorage.setItem('task-manager-accessToken', newAccessToken);
+      localStorage.setItem('task-pilot-accessToken', newAccessToken);
       return newAccessToken;
     }
     
     throw new Error('Failed to refresh token');
   } catch (error) {
     // 토큰 갱신 실패 시 로그아웃 처리
-    localStorage.removeItem('task-manager-accessToken');
-    document.cookie = 'task-manager-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.removeItem('task-pilot-accessToken');
+    document.cookie = 'task-pilot-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     
     // 현재 페이지가 로그인 페이지가 아닌 경우에만 리다이렉트
     if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -72,7 +72,7 @@ instance.interceptors.request.use(
       return config;
     }
     
-    const token = localStorage.getItem('task-manager-accessToken');
+    const token = localStorage.getItem('task-pilot-accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -106,8 +106,8 @@ instance.interceptors.response.use(
     if (originalRequest.url?.includes('/auth/refresh')) {
       // 리프레시 토큰 요청 자체가 실패한 경우
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
-        localStorage.removeItem('task-manager-accessToken');
-        document.cookie = 'task-manager-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        localStorage.removeItem('task-pilot-accessToken');
+        document.cookie = 'task-pilot-refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
       return Promise.reject(error);

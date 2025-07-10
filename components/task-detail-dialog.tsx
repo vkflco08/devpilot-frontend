@@ -71,13 +71,13 @@ export function TaskDetailDialog({
     const updatedTask: Task = {
       ...task,
       title,
-      description: description || undefined,
+      description: description || null,
       status,
-      tags: tags || undefined,
-      priority: priority || undefined,
-      dueDate: dueDate ? dueDate.toISOString() : undefined,
-      estimatedTimeHours: estimatedTimeHours || undefined,
-      actualTimeHours: actualTimeHours || undefined,
+      tags: tags || null,
+      priority: priority || 3,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      estimatedTimeHours: estimatedTimeHours || null,
+      actualTimeHours: actualTimeHours || null,
     }
 
     await onUpdateTask(updatedTask)

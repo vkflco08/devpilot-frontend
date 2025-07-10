@@ -23,7 +23,7 @@ export function useMyInfo() {
 
   useEffect(() => {
     const fetchMyInfo = async () => {
-      const token = localStorage.getItem('task-manager-accessToken');
+      const token = localStorage.getItem('task-pilot-accessToken');
       if (!token) {
         setLoading(false);
         setError('로그인이 필요합니다.');
