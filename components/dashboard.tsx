@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import axios from "@/lib/axiosInstance"
 import LoadingSpinner from "@/components/LoadingSpinner"
+import { ProjectStatus } from "@/lib/types"
 
 interface DashboardProps {
   isCreateDialogOpen: boolean
@@ -343,6 +344,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
       const response = await axios.post("/api/project/new", {
         projectName: projectName.trim(),
         projectDescription: projectDesc.trim() || undefined,
+        projectStatus: ProjectStatus.ACTIVE,
       })
       if (response.data && response.data.resultCode === "SUCCESS") {
         await fetchProjects();

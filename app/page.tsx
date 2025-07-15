@@ -3,7 +3,6 @@
 import { Suspense } from "react"
 import Dashboard from "@/components/dashboard"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TreeView } from "@/components/tree-view"
 import { Loader2, PlusCircle } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
@@ -12,6 +11,7 @@ import { useRouter } from "next/navigation"
 import RequireAuth from "@/components/RequireAuth"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import { useTheme } from "next-themes"
+import HierarchyView from "@/components/hierarchy-view"
 
 export default function Home() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -37,7 +37,7 @@ export default function Home() {
               <div className="flex items-center gap-4">
                 <TabsList>
                   <TabsTrigger value="dashboard">대시보드</TabsTrigger>
-                  {/* <TabsTrigger value="tree">트리 뷰</TabsTrigger> */}
+                  <TabsTrigger value="hierarchy-view">계층 보기</TabsTrigger>
                 </TabsList>
                 <ThemeToggle />
                 <Button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center gap-2">
@@ -64,9 +64,9 @@ export default function Home() {
             </Suspense>
           </TabsContent>
 
-          <TabsContent value="tree" className="mt-0">
+          <TabsContent value="hierarchy-view" className="mt-0">
             <Suspense fallback={<LoadingState />}>
-              <TreeView isCreateDialogOpen={isCreateDialogOpen} setIsCreateDialogOpen={setIsCreateDialogOpen} />
+              <HierarchyView />
             </Suspense>
           </TabsContent>
         </Tabs>

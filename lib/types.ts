@@ -2,6 +2,7 @@ export enum TaskStatus {
   TODO = "TODO",
   DOING = "DOING",
   DONE = "DONE",
+  BLOCKED = "BLOCKED",
 }
 
 export enum ProjectStatus {
