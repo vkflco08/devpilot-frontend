@@ -31,7 +31,7 @@ export interface Task {
   dueDate?: string | null
   estimatedTimeHours?: number | null
   actualTimeHours?: number | null
-  parent?: Task | null
+  parentId?: number | null
   subTasks: Task[]
   projectId?: number
 }

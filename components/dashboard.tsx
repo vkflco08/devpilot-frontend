@@ -205,7 +205,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
         priority: newTask.priority,
         dueDate: newTask.dueDate,
         estimatedTimeHours: newTask.estimatedTimeHours,
-        parentId: newTask.parent?.id,
+        parentId: newTask.parentId,
         projectId: newTask.projectId,
       })
       if (response.data && response.data.resultCode === "SUCCESS") {

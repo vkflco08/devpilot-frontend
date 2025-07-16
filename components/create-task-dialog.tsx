@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { type Task, TaskStatus } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -59,6 +58,7 @@ export function CreateTaskDialog({
       // If creating a subtask, inherit some properties from parent
       if (parentTask) {
         setSelectedParentId(parentTask.id)
+        setSelectedProjectId(parentTask.projectId ?? 'none')
         setStatus(parentTask.status)
         // Optionally inherit tags or other properties
         if (parentTask.tags) {
@@ -84,13 +84,13 @@ export function CreateTaskDialog({
     const newTask: Task = {
       id: Date.now(),
       title,
-      description: description || "",
+      description: description === '' ? '' : (description || null),
       status,
-      tags: tags || "",
+      tags: tags === '' ? '' : (tags || null),
       priority: priority || 3,
-      dueDate: dueDate ? dueDate.toISOString() : "",
+      dueDate: dueDate ? dueDate.toISOString() : null,
       estimatedTimeHours: estimatedTimeHours || null,
-      parent: selectedParentId ? ({ id: selectedParentId } as Task) : undefined,
+      parentId: selectedParentId,
       subTasks: [],
       projectId: selectedProjectId === 'none' ? undefined : selectedProjectId,
     }
@@ -124,7 +124,11 @@ export function CreateTaskDialog({
     result: Array<{ task: Task; level: number }> = [],
   ): Array<{ task: Task; level: number }> => {
     tasks.forEach((task) => {
-      result.push({ task, level })
+      // ✨ 자기 자신을 상위 태스크로 선택할 수 없도록 제외
+      // selectedParentId가 현재 태스크의 ID와 같지 않도록 필터링
+      if (task.id !== selectedParentId) {
+        result.push({ task, level })
+      }
       if (task.subTasks && task.subTasks.length > 0) {
         flattenTasks(task.subTasks, level + 1, result)
       }
@@ -169,7 +173,7 @@ export function CreateTaskDialog({
                 <Label htmlFor="parent">상위 태스크 (선택사항)</Label>
                 <Select
                   value={selectedParentId?.toString() || ""}
-                  onValueChange={(value) => setSelectedParentId(value ? Number.parseInt(value) : null)}
+                  onValueChange={(value) => setSelectedParentId(value === 'none' ? null : Number.parseInt(value))}
                 >
                   <SelectTrigger id="parent">
                     <SelectValue placeholder="상위 태스크 선택 (없음)" />
@@ -193,6 +197,7 @@ export function CreateTaskDialog({
               <Select
                 value={selectedProjectId === 'none' ? 'none' : selectedProjectId.toString()}
                 onValueChange={value => setSelectedProjectId(value === 'none' ? 'none' : Number(value))}
+                disabled={!!parentTask} 
               >
                 <SelectTrigger id="project">
                   <SelectValue placeholder="프로젝트 선택" />
@@ -223,7 +228,7 @@ export function CreateTaskDialog({
               <div className="grid gap-2">
                 <Label htmlFor="priority">우선순위</Label>
                 <Select
-                  value={priority?.toString() || ""}
+                  value={priority?.toString() || "3"}
                   onValueChange={(value) => setPriority(value ? Number.parseInt(value) : null)}
                 >
                   <SelectTrigger id="priority">
@@ -267,7 +272,7 @@ export function CreateTaskDialog({
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="estimatedTime">예상 시간 (시간)</Label>
                 <Input
                   id="estimatedTime"
@@ -278,7 +283,7 @@ export function CreateTaskDialog({
                   onChange={(e) => setEstimatedTimeHours(e.target.value ? Number.parseFloat(e.target.value) : null)}
                   placeholder="예: 2.5"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
           <DialogFooter>

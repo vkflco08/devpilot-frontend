@@ -19,7 +19,6 @@ import { TaskDetailDialog } from "@/components/task-detail-dialog"
 interface Task extends OrigTask {}
 interface Project extends OrigProject {}
 
-
 // --- TaskItem 컴포넌트 (변경 없음, 이전 코드 그대로 사용) ---
 const TaskItem = ({
   task,
@@ -249,7 +248,6 @@ const ProjectCard = ({
             variant="ghost"
             size="sm"
             className="w-full mt-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            // ✨ onClick 핸들러 수정: onAddTask 함수를 호출하고 현재 project.id를 전달합니다.
             onClick={() => onAddTask(project.id)}
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -261,14 +259,18 @@ const ProjectCard = ({
   )
 }
 
-// --- HierarchyView 컴포넌트 (주요 수정) ---
-export default function HierarchyView() {
+interface HierarchyViewProps { 
+    isCreateDialogOpen: boolean;
+    setIsCreateDialogOpen: (open: boolean) => void;
+}
+
+export default function HierarchyView({ isCreateDialogOpen, setIsCreateDialogOpen }: HierarchyViewProps) {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskLoading, setTaskLoading] = useState(false)
-  const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false) // CreateTaskDialog 상태
+//   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false) // CreateTaskDialog 상태
   const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null) // 부모 태스크 상태
   const [selectedProjectIdForCreate, setSelectedProjectIdForCreate] = useState<number | null>(null); // 태스크 생성 시 사용할 프로젝트 ID
 
@@ -277,12 +279,11 @@ export default function HierarchyView() {
     setLoading(true)
     setError(null)
     try {
-      const res = await axios.get("/api/project/mypage")
+      const res = await axios.get("/api/project/dashboard")
       if (res.data.resultCode === "SUCCESS") {
         const fetchedProjects: Project[] = res.data.data.map((proj: any) => ({
           ...proj,
-          tasks: buildTaskTree(proj.tasks || []) // API 응답이 플랫한 태스크 리스트라면 buildTaskTree 필요
-          // 만약 백엔드에서 이미 계층 구조를 제공한다면 `tasks: proj.tasks || []`만 사용
+          tasks: buildTaskTree(proj.tasks || [])
         }))
         setProjects(fetchedProjects)
       } else {
@@ -325,7 +326,7 @@ export default function HierarchyView() {
   const handleAddTaskToProject = (projectId: number) => {
     setParentTaskForCreate(null); // 최상위 태스크이므로 부모 태스크 없음
     setSelectedProjectIdForCreate(projectId); // 선택된 프로젝트 ID 설정
-    setIsCreateTaskDialogOpen(true); // 다이얼로그 열기
+    setIsCreateDialogOpen(true); // 다이얼로그 열기
   };
 
   // Subtask 추가 핸들러 (TaskDetailDialog에서 호출될 때)
@@ -334,7 +335,7 @@ export default function HierarchyView() {
     setTimeout(() => {
       setParentTaskForCreate(parentTask);
       setSelectedProjectIdForCreate(parentTask.projectId || null);
-      setIsCreateTaskDialogOpen(true);
+      setIsCreateDialogOpen(true);
     }, 100);
   };
 
@@ -342,6 +343,7 @@ export default function HierarchyView() {
   const handleCreateTask = async (newTask: OrigTask) => {
     setTaskLoading(true);
     try {
+        console.log("newTask parentId", newTask.parentId)
       const response = await axios.post("/api/task/new", {
         title: newTask.title,
         description: newTask.description === '' ? '' : (newTask.description || null), // 빈 문자열 허용 및 undefined -> null
@@ -351,12 +353,12 @@ export default function HierarchyView() {
         dueDate: newTask.dueDate || null, // 빈 문자열 -> null
         estimatedTimeHours: newTask.estimatedTimeHours || null, // undefined -> null
         // actualTimeHours는 TaskCreateRequest에 없으므로 일단 제외. 필요하면 백엔드 DTO 및 여기에 추가
-        parentId: (newTask as Task).parent?.id, 
+        parentId: newTask.parentId, 
         projectId: newTask.projectId,
       });
       if (response.data && response.data.resultCode === "SUCCESS") {
         await fetchProjectsAndTasks();
-        setIsCreateTaskDialogOpen(false);
+        setIsCreateDialogOpen(false);
         setParentTaskForCreate(null);
         setSelectedProjectIdForCreate(null);
       } else {
@@ -432,12 +434,12 @@ export default function HierarchyView() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">프로젝트 & 태스크 계층 구조</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            조직화된 트리 뷰에서 프로젝트와 태스크를 관리하세요.
+            상위 태스크와 하위 태스크의 계층 관계를 한눈에 파악하며 효율적으로 프로젝트를 관리하세요.
           </p>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.length === 0 ? (
@@ -451,7 +453,7 @@ export default function HierarchyView() {
                 project={project}
                 onToggleTask={toggleTask}
                 onTaskClick={handleTaskClick}
-                onAddTask={handleAddTaskToProject} // ✨ ProjectCard에 onAddTask prop 전달
+                onAddTask={handleAddTaskToProject}
               />
             ))
           )}
@@ -474,8 +476,8 @@ export default function HierarchyView() {
 
       {/* Create Task Dialog */}
       <CreateTaskDialog
-        open={isCreateTaskDialogOpen}
-        onOpenChange={setIsCreateTaskDialogOpen}
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
         onCreateTask={handleCreateTask}
         parentTask={parentTaskForCreate}
         existingTasks={projects.flatMap(p => p.tasks || [])}

@@ -7,7 +7,8 @@ import { Loader2, PlusCircle } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation" // Next.js 13의 useRouter
+import { useSearchParams } from "next/navigation" // useSearchParams 임포트
 import RequireAuth from "@/components/RequireAuth"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import { useTheme } from "next-themes"
@@ -16,11 +17,37 @@ import HierarchyView from "@/components/hierarchy-view"
 export default function Home() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams() // URL 쿼리 파라미터를 읽기 위한 훅
   const { myInfo, loading, error } = useMyInfo()
   const { theme, systemTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => { setMounted(true) }, [])
+  const [activeTab, setActiveTab] = useState("dashboard")
+
+  useEffect(() => {
+    setMounted(true)
+    const tabParam = searchParams.get('tab')
+    if (tabParam && (tabParam === "dashboard" || tabParam === "hierarchy-view")) {
+      setActiveTab(tabParam)
+    } else {
+      setActiveTab("dashboard")
+      // URL에 기본 탭을 추가 (선택적)
+      // router.replace({ query: { tab: 'dashboard' } }, undefined, { shallow: true });
+    }
+  }, [searchParams]) // searchParams가 변경될 때마다 재실행
+
+  useEffect(() => {
+    if (mounted) {
+      const currentTabParam = searchParams.get('tab');
+      if (currentTabParam !== activeTab) { 
+        const newSearchParams = new URLSearchParams(searchParams.toString());
+        newSearchParams.set('tab', activeTab);
+        router.replace(`/?${newSearchParams.toString()}`, undefined, { shallow: true });
+      }
+    }
+  }, [activeTab, mounted, router, searchParams]);
+
+
   const resolved = theme === "system" ? systemTheme : theme
   const bgClass = resolved === "dark"
     ? "bg-gradient-to-br from-[#18181b] to-[#23272f]"
@@ -30,7 +57,7 @@ export default function Home() {
   return (
     <RequireAuth>
       <div className="min-h-screen">
-        <Tabs defaultValue="dashboard" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="container mx-auto px-4 py-4 border-b">
             <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold">TaskPilot</h1>
@@ -66,7 +93,7 @@ export default function Home() {
 
           <TabsContent value="hierarchy-view" className="mt-0">
             <Suspense fallback={<LoadingState />}>
-              <HierarchyView />
+              <HierarchyView isCreateDialogOpen={isCreateDialogOpen} setIsCreateDialogOpen={setIsCreateDialogOpen}/>
             </Suspense>
           </TabsContent>
         </Tabs>
