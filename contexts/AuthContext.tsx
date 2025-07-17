@@ -1,4 +1,4 @@
-'use client'; // App Router일 때 필수
+'use client';
 
 import React, { createContext, useEffect, useState, type ReactNode } from 'react';
 import axios from '@/lib/axiosInstance';
@@ -6,7 +6,7 @@ import axios from '@/lib/axiosInstance';
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (accessToken: string) => void;
+  login: (tokenInfo: { accessToken: string, refreshToken: string }) => void;
   logout: () => void;
 }
 
@@ -22,9 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (accessToken: string) => {
-    localStorage.setItem('task-pilot-accessToken', accessToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+  const login = (tokenInfo: { accessToken: string, refreshToken: string }) => {
+    localStorage.setItem('task-pilot-accessToken', tokenInfo.accessToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${tokenInfo.accessToken}`;
     setIsAuthenticated(true);
   };
 
@@ -46,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       handleLogoutCleanup();
     } catch (error) {
+      console.error("Logout API failed, performing client-side cleanup:", error);
       handleLogoutCleanup();
     }
   };
@@ -53,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleLogoutCleanup = () => {
     localStorage.removeItem('task-pilot-accessToken');
     setIsAuthenticated(false);
-    window.location.href = '/landing';
+    // window.location.href = '/login';
   };
 
   return (

@@ -174,7 +174,7 @@ export function TaskDetailDialog({
                   </PopoverContent>
                 </Popover>
               </div>
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="estimatedTime">예상 시간 (시간)</Label>
                 <Input
                   id="estimatedTime"
@@ -185,9 +185,9 @@ export function TaskDetailDialog({
                   onChange={(e) => setEstimatedTimeHours(e.target.value ? Number.parseFloat(e.target.value) : null)}
                   placeholder="예: 2.5"
                 />
-              </div>
+              </div> */}
             </div>
-            <div className="grid gap-2">
+            {/* <div className="grid gap-2">
               <Label htmlFor="actualTime">실제 소요 시간 (시간)</Label>
               <Input
                 id="actualTime"
@@ -198,7 +198,7 @@ export function TaskDetailDialog({
                 onChange={(e) => setActualTimeHours(e.target.value ? Number.parseFloat(e.target.value) : null)}
                 placeholder="예: 3.0"
               />
-            </div>
+            </div> */}
             {estimatedTimeHours && actualTimeHours && (
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium">시간 차이: </span>

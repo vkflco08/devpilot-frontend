@@ -2,6 +2,7 @@ export enum TaskStatus {
   TODO = "TODO",
   DOING = "DOING",
   DONE = "DONE",
+  BLOCKED = "BLOCKED",
 }
 
 export enum ProjectStatus {
@@ -30,7 +31,8 @@ export interface Task {
   dueDate?: string | null
   estimatedTimeHours?: number | null
   actualTimeHours?: number | null
-  parent?: Task | null
+  parentId?: number | null
   subTasks: Task[]
   projectId?: number
+  previousStatus?: TaskStatus | null;
 }
