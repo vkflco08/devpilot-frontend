@@ -3,20 +3,18 @@
 import { useState, useEffect, useCallback } from "react"
 import type { DragEndEvent } from "@dnd-kit/core"
 import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core"
-import { arrayMove } from "@dnd-kit/sortable"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { type Task as OrigTask, TaskStatus } from "@/lib/types"
-import { buildTaskTree, getRootTasks, findTaskById } from "@/lib/task-utils"
+import { buildTaskTree, getRootTasks, flattenTaskTree } from "@/lib/task-utils"
 import { TaskCard } from "@/components/task-card"
 import { TaskColumn } from "@/components/task-column"
 import { CreateTaskDialog } from "@/components/create-task-dialog"
 import { TaskDetailDialog } from "@/components/task-detail-dialog"
-import { TaskTreeExpanded } from "@/components/task-tree-expanded"
 import { TaskFilter } from "@/components/task-filter"
 import { BarChart3, PlusCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Button, } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog" // Dialog 임포트
 import axios from "@/lib/axiosInstance"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import { ProjectStatus } from "@/lib/types"
@@ -29,17 +27,16 @@ interface DashboardProps {
 type Task = OrigTask & { projectId?: number }
 
 export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }: DashboardProps) {
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [tasks, setTasks] = useState<Task[]>([]) // tasks는 이제 buildTaskTree를 거쳐 트리 형태
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null) // 새로 추가
+  const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [filterOptions, setFilterOptions] = useState({
     tag: "",
     priority: 0,
     search: "",
   })
-  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null)
   const [activeId, setActiveId] = useState<number | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<'all' | number>('all')
   const [projectDialogOpen, setProjectDialogOpen] = useState(false)
@@ -73,21 +70,19 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     setLoading(true)
     setError(null)
     try {
+      let res;
       if (projectId === 'all') {
-        const res = await axios.get("/api/task/all")
-        if (res.data.resultCode === "SUCCESS") {
-          setTasks(res.data.data)
-        } else {
-          setError(res.data.message || "태스크 목록을 불러오지 못했습니다.")
-        }
+        res = await axios.get("/api/task/all")
       } else {
-        const res = await axios.get(`/api/project/${projectId}`)
-        if (res.data.resultCode === "SUCCESS") {
-          setTasks(res.data.data.tasks || [])
-        } else {
-          setError(res.data.message || "프로젝트 태스크를 불러오지 못했습니다.")
-        }
-      } 
+        res = await axios.get(`/api/project/${projectId}`)
+      }
+      
+      if (res.data.resultCode === "SUCCESS") {
+        const fetchedTasks = projectId === 'all' ? res.data.data : res.data.data.tasks;
+        setTasks(buildTaskTree(fetchedTasks || []));
+      } else {
+        setError(res.data.message || "태스크 목록을 불러오지 못했습니다.")
+      }
     } catch (e: any) {
       setError(e?.response?.data?.message || "태스크 목록을 불러오지 못했습니다.")
     } finally {
@@ -104,14 +99,10 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   }, [selectedProjectId])
 
   useEffect(() => {
-    // First build the task tree to properly handle parent-child relationships
-    const taskTree = buildTaskTree(tasks)
-
-    // Then apply filters to the tree
-    let filtered = [...taskTree]
+    let filtered = [...tasks] // tasks는 이미 트리 형태
 
     if (filterOptions.tag) {
-      filtered = filtered.filter((task) => task.tags?.includes(filterOptions.tag))
+      filtered = flattenTaskTree(filtered).filter((task) => task.tags?.includes(filterOptions.tag))
     }
 
     if (filterOptions.priority > 0) {
@@ -125,34 +116,29 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
           task.title.toLowerCase().includes(searchLower) || task.description?.toLowerCase().includes(searchLower),
       )
     }
-
     setFilteredTasks(filtered)
   }, [tasks, filterOptions])
 
   // Create dialog이 열릴 때 parentTask 초기화
   useEffect(() => {
     if (isCreateDialogOpen) {
-      // nav에서 열릴 때는 parentTask를 null로 설정
       if (!parentTaskForCreate) {
         setParentTaskForCreate(null)
       }
     } else {
-      // Create dialog이 닫힐 때 parentTask 초기화
       setParentTaskForCreate(null)
     }
   }, [isCreateDialogOpen])
 
-  // 프로젝트별 필터링
   const projectFilteredTasks = selectedProjectId === 'all'
-    ? filteredTasks
+    ? filteredTasks // filteredTasks는 이미 트리 형태
     : filteredTasks.filter((task) => task.projectId === selectedProjectId);
 
-  // Get only root tasks (tasks without parents)
-  const rootTasks = getRootTasks(projectFilteredTasks)
+  const rootTasksForColumns = getRootTasks(projectFilteredTasks); // TaskColumn에 들어갈 루트 태스크들
 
-  const todoTasks = rootTasks.filter((task) => task.status === TaskStatus.TODO)
-  const doingTasks = rootTasks.filter((task) => task.status === TaskStatus.DOING)
-  const doneTasks = rootTasks.filter((task) => task.status === TaskStatus.DONE)
+  const todoTasks = rootTasksForColumns.filter((task) => task.status === TaskStatus.TODO)
+  const doingTasks = rootTasksForColumns.filter((task) => task.status === TaskStatus.DOING)
+  const doneTasks = rootTasksForColumns.filter((task) => task.status === TaskStatus.DONE)
 
   const handleDragStart = (event: any) => {
     const { active } = event
@@ -167,22 +153,20 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     const activeTaskId = active.id as number;
     let newStatus: TaskStatus | undefined;
 
-    // 1. 컬럼의 빈 공간에 드롭: over.id가 status임
     if (Object.values(TaskStatus).includes(over.id as TaskStatus)) {
       newStatus = over.id as TaskStatus;
     } else {
-      // 2. 태스크 위에 드롭: 해당 태스크의 status를 찾아서 사용
-      const overTask = tasks.find(t => t.id === over.id);
+      const overTask = flattenTaskTree(tasks).find(t => t.id === over.id); // 모든 태스크에서 찾기
       if (overTask) newStatus = overTask.status;
     }
 
-    const activeTask = tasks.find(t => t.id === activeTaskId);
+    const activeTask = flattenTaskTree(tasks).find(t => t.id === activeTaskId); // 모든 태스크에서 찾기
     if (newStatus && activeTask && activeTask.status !== newStatus) {
       setTaskLoading(true);
       try {
         const response = await axios.put(`/api/task/${activeTaskId}`, { status: newStatus });
         if (response.data?.resultCode === "SUCCESS") {
-          await fetchTasks(selectedProjectId);
+          await fetchTasks(selectedProjectId); // 데이터 다시 페치하여 UI 업데이트
         } else {
           alert(response.data?.message || "상태 변경에 실패했습니다.");
         }
@@ -194,24 +178,43 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     } 
   }    
 
-  const handleCreateTask = async (newTask: Task) => {
+  const handleToggleTaskStatus = async (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => {
+    setTaskLoading(true);
+    try {
+        const response = await axios.put(`/api/task/${taskId}`, { 
+            status: newStatus,
+            previousStatus: previousStatusToSend 
+        });
+        if (response.data?.resultCode === "SUCCESS") {
+            await fetchTasks(selectedProjectId);
+        } else {
+            alert(response.data?.message || "태스크 상태 업데이트에 실패했습니다.");
+        }
+    } catch (e: any) {
+        alert(e?.response?.data?.message || "태스크 상태 업데이트 중 오류가 발생했습니다.");
+    } finally {
+        setTaskLoading(false);
+    }
+  };
+
+  const handleCreateTask = async (newTask: Task) => { // newTask는 CreateTaskDialog에서 넘어온 Task 객체
     setTaskLoading(true)
     try {
       const response = await axios.post("/api/task/new", {
         title: newTask.title,
-        description: newTask.description,
+        description: newTask.description === '' ? '' : (newTask.description || null),
         status: newTask.status,
-        tags: newTask.tags,
-        priority: newTask.priority,
-        dueDate: newTask.dueDate,
-        estimatedTimeHours: newTask.estimatedTimeHours,
+        tags: newTask.tags === '' ? '' : (newTask.tags || null),
+        priority: newTask.priority || null,
+        dueDate: newTask.dueDate || null,
+        estimatedTimeHours: newTask.estimatedTimeHours || null,
         parentId: newTask.parentId,
         projectId: newTask.projectId,
       })
       if (response.data && response.data.resultCode === "SUCCESS") {
         await fetchTasks(selectedProjectId)
         setIsCreateDialogOpen(false)
-        setParentTaskForCreate(null) // 생성 후 초기화
+        setParentTaskForCreate(null)
       } else {
         alert(response.data?.message || "태스크 생성에 실패했습니다.")
       }
@@ -228,13 +231,13 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     try {
       const response = await axios.put(`/api/task/${updatedTask.id}`, {
         title: updatedTask.title,
-        description: updatedTask.description,
+        description: updatedTask.description === '' ? '' : (updatedTask.description || null),
         status: updatedTask.status,
-        tags: updatedTask.tags,
-        priority: updatedTask.priority,
-        dueDate: updatedTask.dueDate,
-        estimatedTimeHours: updatedTask.estimatedTimeHours,
-        actualTimeHours: updatedTask.actualTimeHours,
+        tags: updatedTask.tags === '' ? '' : (updatedTask.tags || null),
+        priority: updatedTask.priority || null,
+        dueDate: updatedTask.dueDate || null,
+        estimatedTimeHours: updatedTask.estimatedTimeHours || null,
+        actualTimeHours: updatedTask.actualTimeHours || null,
       })
       if (response.data?.resultCode === "SUCCESS") {
         await fetchTasks(selectedProjectId)
@@ -269,38 +272,54 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     }
   }
 
+  const handleAddSubtask = (parentTask: Task) => {
+    setSelectedTask(null)
+    setTimeout(() => {
+      setParentTaskForCreate(parentTask);
+      setSelectedProjectId(parentTask.projectId || 'all');
+      setIsCreateDialogOpen(true);
+    }, 100);
+  };
+
+  const handleDuplicateTask = async (taskToDuplicate: Task) => {
+    setTaskLoading(true);
+    try {
+      const response = await axios.post("/api/task/new", {
+        title: `${taskToDuplicate.title} (복제됨)`,
+        description: taskToDuplicate.description,
+        status: TaskStatus.TODO,
+        tags: taskToDuplicate.tags,
+        priority: taskToDuplicate.priority,
+        dueDate: taskToDuplicate.dueDate,
+        estimatedTimeHours: taskToDuplicate.estimatedTimeHours,
+        projectId: taskToDuplicate.projectId,
+        parentId: taskToDuplicate.parentId,
+      });
+      if (response.data?.resultCode === "SUCCESS") {
+        await fetchTasks(selectedProjectId);
+      } else {
+        alert(response.data?.message || "태스크 복제에 실패했습니다.");
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "태스크 복제 중 오류가 발생했습니다.");
+    } finally {
+      setTaskLoading(false);
+    }
+  };
+
+
   const openTaskDetail = (task: Task) => {
     setSelectedTask(task)
     setIsDetailDialogOpen(true)
   }
 
-  const handleAddSubtask = (parentTask: Task) => {
-    setSelectedTask(null)
-    setIsDetailDialogOpen(false)
+  const activeTask = activeId ? flattenTaskTree(tasks).find(t => t.id === activeId) : null // 모든 태스크에서 찾기
 
-    // Open create dialog with parent task pre-selected
-    setTimeout(() => {
-      setParentTaskForCreate(parentTask) // selectedTask 대신 parentTaskForCreate 사용
-      setIsCreateDialogOpen(true)
-    }, 100)
-  }
-
-  const toggleTaskExpansion = (taskId: number) => {
-    setExpandedTaskId(expandedTaskId === taskId ? null : taskId)
-  }
-
-  // Find the expanded task if any
-  const expandedTask = expandedTaskId ? findTaskById(filteredTasks, expandedTaskId) : null
-
-  // Find the active task for drag overlay
-  const activeTask = activeId ? findTaskById(filteredTasks, activeId) : null
-
-  // 진행상황 계산 함수
   function getProgressStats(tasks: any[]) {
-    const total = tasks.length
-    const done = tasks.filter((t) => t.status === TaskStatus.DONE).length
-    const doing = tasks.filter((t) => t.status === TaskStatus.DOING).length
-    const todo = tasks.filter((t) => t.status === TaskStatus.TODO).length
+    const total = flattenTaskTree(tasks).length // 모든 하위 태스크 포함
+    const done = flattenTaskTree(tasks).filter((t) => t.status === TaskStatus.DONE).length
+    const doing = flattenTaskTree(tasks).filter((t) => t.status === TaskStatus.DOING).length
+    const todo = flattenTaskTree(tasks).filter((t) => t.status === TaskStatus.TODO).length
     const percent = total > 0 ? Math.round((done / total) * 100) : 0
     return { total, done, doing, todo, percent }
   }
@@ -320,7 +339,9 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     ]
   } else {
     const proj = projects.find(p => p.id === selectedProjectId)
-    const stats = getProgressStats(tasks)
+    // 현재 프로젝트에 해당하는 태스크들만 필터링하여 진행률 계산
+    const projectSpecificTasks = flattenTaskTree(tasks).filter(t => t.projectId === selectedProjectId);
+    const stats = getProgressStats(projectSpecificTasks)
     progressCards = [
       {
         title: proj ? proj.name : '',
@@ -426,7 +447,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
               <LoadingSpinner text="처리 중..." />
             </div>
           ) : (
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 ${expandedTask ? "w-1/2" : "w-full"}`}>
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 w-full`}>
               <DndContext collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <TaskColumn title="할 일" status={TaskStatus.TODO} count={todoTasks.length}>
                   <SortableContext items={todoTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
@@ -435,9 +456,10 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         key={task.id}
                         task={task}
                         index={index}
-                        isExpanded={expandedTaskId === task.id}
-                        onToggleExpand={() => toggleTaskExpansion(task.id)}
-                        onClick={() => openTaskDetail(task)}
+                        onClick={openTaskDetail}
+                        onToggleTask={handleToggleTaskStatus}
+                        onAddSubtask={handleAddSubtask}
+                        onDeleteTask={handleDeleteTask}
                       />
                     ))}
                   </SortableContext>
@@ -450,9 +472,10 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         key={task.id}
                         task={task}
                         index={index}
-                        isExpanded={expandedTaskId === task.id}
-                        onToggleExpand={() => toggleTaskExpansion(task.id)}
-                        onClick={() => openTaskDetail(task)}
+                        onClick={openTaskDetail}
+                        onToggleTask={handleToggleTaskStatus}
+                        onAddSubtask={handleAddSubtask}
+                        onDeleteTask={handleDeleteTask}
                       />
                     ))}
                   </SortableContext>
@@ -465,9 +488,10 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         key={task.id}
                         task={task}
                         index={index}
-                        isExpanded={expandedTaskId === task.id}
-                        onToggleExpand={() => toggleTaskExpansion(task.id)}
-                        onClick={() => openTaskDetail(task)}
+                        onClick={openTaskDetail}
+                        onToggleTask={handleToggleTaskStatus}
+                        onAddSubtask={handleAddSubtask}
+                        onDeleteTask={handleDeleteTask}
                       />
                     ))}
                   </SortableContext>
@@ -477,22 +501,19 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                 <DragOverlay>
                   {activeTask ? (
                     <div className="opacity-80">
-                      <TaskCard task={activeTask} index={0} isExpanded={false} onClick={() => {}} isDragOverlay />
+                      <TaskCard
+                        task={activeTask}
+                        index={0}
+                        onClick={openTaskDetail}
+                        isDragOverlay
+                        onToggleTask={handleToggleTaskStatus}
+                        onAddSubtask={handleAddSubtask}
+                        onDeleteTask={handleDeleteTask}
+                      />
                     </div>
                   ) : null}
                 </DragOverlay>
               </DndContext>
-            </div>
-          )}
-
-          {/* Expanded task tree view */}
-          {expandedTask && !loading && !taskLoading && (
-            <div className="w-1/2 pl-6 animate-in slide-in-from-right duration-300">
-              <TaskTreeExpanded
-                task={expandedTask}
-                onTaskClick={openTaskDetail}
-                onClose={() => setExpandedTaskId(null)}
-              />
             </div>
           )}
         </div>
@@ -502,7 +523,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         onCreateTask={handleCreateTask}
-        parentTask={parentTaskForCreate} // selectedTask 대신 parentTaskForCreate 사용
+        parentTask={parentTaskForCreate}
         existingTasks={tasks}
         projects={projectOptions}
         defaultProjectId={selectedProjectId !== 'all' ? Number(selectedProjectId) : null}
@@ -558,15 +579,4 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
       </Dialog>
     </div>
   )
-}
-
-export function flattenTaskTree(tasks: Task[]): Task[] {
-  const result: Task[] = [];
-  if (!Array.isArray(tasks)) return result;
-  function traverse(task: Task) {
-    result.push(task);
-    (task.subTasks ?? []).forEach(traverse);
-  }
-  tasks.forEach(traverse);
-  return result;
 }

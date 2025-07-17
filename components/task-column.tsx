@@ -21,7 +21,7 @@ export function TaskColumn({ title, status, count, children }: TaskColumnProps) 
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col h-auto rounded-lg border bg-card shadow-sm",
+        "flex flex-col h-auto rounded-lg border bg-card shadow-sm min-w-[280px]", // Tailwind CSS 단위 (예: 280px)
         isOver && "ring-2 ring-primary ring-opacity-50",
       )}
     >

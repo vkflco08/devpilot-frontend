@@ -5,28 +5,36 @@ import { CSS } from "@dnd-kit/utilities"
 import { type Task, TaskStatus } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Calendar, Clock, GripVertical, ChevronRight, ChevronDown } from "lucide-react"
-import { format } from "date-fns"
+import { GripVertical, ChevronRight, ChevronDown, MoreHorizontal } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
+import { Button, } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TaskCardProps {
   task: Task
   index?: number
-  level?: number
-  isExpanded?: boolean
-  onToggleExpand?: () => void
-  onClick: () => void
+  onClick: (task: Task) => void
   isDragOverlay?: boolean
+  onToggleTask: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void;
+  onAddSubtask: (parentTask: Task) => void;
+  onDeleteTask: (taskId: number, taskTitle: string) => void;
 }
 
 export function TaskCard({
   task,
   index = 0,
-  level = 0,
-  isExpanded = false,
-  onToggleExpand,
   onClick,
   isDragOverlay = false,
+  onToggleTask,
+  onAddSubtask,
+  onDeleteTask,
 }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -40,6 +48,8 @@ export function TaskCard({
     },
     disabled: isDragOverlay,
   })
+
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -58,6 +68,7 @@ export function TaskCard({
     [TaskStatus.TODO]: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300",
     [TaskStatus.DOING]: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
     [TaskStatus.DONE]: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+    [TaskStatus.BLOCKED]: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
   }
 
   const hasSubtasks = task.subTasks && task.subTasks.length > 0
@@ -69,7 +80,6 @@ export function TaskCard({
       className={cn(
         "cursor-pointer group hover:border-primary transition-colors",
         isDragging && "opacity-50",
-        level > 0 && "border-l-4 border-l-primary/20",
         isDragOverlay && "shadow-lg",
       )}
     >
@@ -85,12 +95,12 @@ export function TaskCard({
             </div>
           )}
 
-          {hasSubtasks && onToggleExpand && (
+          {hasSubtasks && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation()
-                onToggleExpand()
+                setIsExpanded(!isExpanded)
               }}
               className="mt-1 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -98,10 +108,10 @@ export function TaskCard({
             </button>
           )}
 
-          <div className="flex-1 space-y-2" onClick={onClick}>
+          <div className="flex-1 space-y-2" onClick={() => onClick(task)}>
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-2">
-                <h4 className="font-medium line-clamp-2">{task.title}</h4>
+                <h4 className="font-medium line-clamp-2">{task.title}</h4> {/* ✨ line-clamp-2 적용 */}
                 {hasSubtasks && (
                   <Badge variant="outline" className="text-xs">
                     {task.subTasks.length}
@@ -119,31 +129,73 @@ export function TaskCard({
             </div>
             {task.description && <p className="text-sm text-muted-foreground line-clamp-2">{task.description}</p>}
             <div className="flex flex-wrap gap-1 pt-1">
-              {task.tags &&
+              {task.tags && typeof task.tags === 'string' && // tags가 string 타입일 때만 split
                 task.tags.split(",").map((tag, i) => (
                   <Badge key={i} variant="secondary" className="text-xs">
                     {tag.trim()}
                   </Badge>
                 ))}
             </div>
-            {task.estimatedTimeHours && task.dueDate && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
-            {task.estimatedTimeHours && (
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span>{task.estimatedTimeHours}시간</span>
+            {/* {(task.estimatedTimeHours || task.dueDate) && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+                {task.estimatedTimeHours && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span>{task.estimatedTimeHours}시간</span>
+                  </div>
+                )}
+                {task.dueDate && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{format(new Date(task.dueDate), "yyyy-MM-dd")}</span>
+                    </div>
+                )}
               </div>
-            )}
-            {task.dueDate && (
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>{format(new Date(task.dueDate), "yyyy-MM-dd")}</span>
-              </div>
-            )}
-            </div>
-            )}
+            )} */}
           </div>
-        </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddSubtask(task); }}>
+                하위 태스크 추가
+              </DropdownMenuItem>
+              {/* <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDuplicateTask(task); }}>
+                태스크 복제
+              </DropdownMenuItem> */}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id, task.title); }}
+                className="text-red-600 focus:bg-red-50 focus:text-red-700"
+              >
+                태스크 삭제
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          </div>
+
+          {hasSubtasks && isExpanded && (
+          <div className="space-y-1 mt-3 pl-6 border-l-2 border-gray-200 dark:border-gray-700"> 
+            {task.subTasks?.map((child) => (
+              <TaskCard 
+                key={child.id}
+                task={child}
+                onClick={onClick} 
+                onToggleTask={onToggleTask} 
+                onAddSubtask={onAddSubtask}
+                onDeleteTask={onDeleteTask} 
+              />
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   )

@@ -330,9 +330,9 @@ export function ProjectList({
     onDeleteTask,
 }: ProjectListProps) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
             {projects.length === 0 ? (
-                <div className="md:col-span-3 text-center py-10 text-muted-foreground">
+                <div className="md:col-span-2 text-center py-10 text-muted-foreground">
                     프로젝트가 없습니다. 새로운 프로젝트를 추가하세요.
                 </div>
             ) : (
