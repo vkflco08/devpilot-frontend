@@ -13,9 +13,6 @@ export function buildTaskTree(flatTasks: Task[]): Task[] {
   const taskMap = new Map<number, Task>(); // ID로 태스크를 빠르게 찾기 위한 맵
   const rootTasks: Task[] = []; // 최상위 태스크들을 담을 리스트
 
-  console.log("Input flat tasks:", flatTasks);
-  console.log("Output tree:", rootTasks);
-
   // 1단계: 모든 태스크를 맵에 저장하고 subTasks 배열 초기화
   flatTasks.forEach(task => {
     // 깊은 복사를 통해 원본 배열의 subTasks에 영향을 주지 않도록

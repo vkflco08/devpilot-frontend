@@ -116,6 +116,33 @@ export default function HierarchyView({ isCreateDialogOpen, setIsCreateDialogOpe
     }, 100);
   }, [setIsCreateDialogOpen]); // setIsCreateDialogOpen이 변경될 때마다 재생성
 
+  // ✨ 태스크 복제 핸들러
+  const handleDuplicateTask = async (taskToDuplicate: Task) => {
+    setTaskLoading(true);
+    try {
+      const response = await axios.post("/api/task", {
+        title: `${taskToDuplicate.title} (복제됨)`, // 복제된 태스크임을 표시
+        description: taskToDuplicate.description,
+        status: TaskStatus.TODO, // 복제된 태스크는 기본적으로 TODO
+        tags: taskToDuplicate.tags,
+        priority: taskToDuplicate.priority,
+        dueDate: taskToDuplicate.dueDate,
+        estimatedTimeHours: taskToDuplicate.estimatedTimeHours,
+        projectId: taskToDuplicate.projectId,
+        parentId: taskToDuplicate.parentId,
+        // previousStatus는 복제 시에는 필요 없음 (새로운 태스크이므로)
+      });
+      if (response.data?.resultCode === "SUCCESS") {
+        await fetchProjectsAndTasks();
+      } else {
+        alert(response.data?.message || "태스크 복제에 실패했습니다.");
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "태스크 복제 중 오류가 발생했습니다.");
+    } finally {
+      setTaskLoading(false);
+    }
+  };
 
   // CreateTaskDialog의 onCreateTask prop으로 전달될 함수
   const handleCreateTask = async (newTask: OrigTask) => {
@@ -211,19 +238,21 @@ export default function HierarchyView({ isCreateDialogOpen, setIsCreateDialogOpe
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">프로젝트 & 태스크 계층 구조</h1>
           <p className="text-gray-600 dark:text-gray-400">
             상위 태스크와 하위 태스크의 계층 관계를 한눈에 파악하며 효율적으로 프로젝트를 관리하세요.
           </p>
-        </div>
+        </div> */}
 
         {/* ProjectList 컴포넌트 렌더링 */}
         <ProjectList
             projects={projects}
-            onToggleTask={toggleTask}
+            onToggle={toggleTask}
             onTaskClick={handleTaskClick}
             onAddTask={handleAddTaskToProject}
+            onAddSubtask={handleAddSubtask}
+            onDeleteTask={handleDeleteTask}
         />
 
         {/* TaskDialogsManager 컴포넌트 렌더링 */}

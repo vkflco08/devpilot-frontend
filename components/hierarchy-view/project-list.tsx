@@ -14,7 +14,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { ChevronDown, ChevronRight, Plus, MoreHorizontal, Calendar } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu"
 import { TaskStatus } from "@/lib/types"
 import type { Task, Project } from "@/lib/types"
 
@@ -23,11 +29,15 @@ const TaskItem = ({
   level = 0,
   onToggle,
   onTaskClick,
+  onAddSubtask,
+  onDeleteTask,
 }: {
   task: Task
   level?: number
   onToggle: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void 
   onTaskClick: (task: Task) => void
+  onAddSubtask: (parentTask: Task) => void
+  onDeleteTask: (taskId: number, taskTitle: string) => void 
 }) => {
   const [isExpanded, setIsExpanded] = useState(true)
 
@@ -163,21 +173,45 @@ const TaskItem = ({
             </div>
           )}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()} // 버튼 클릭 시 태스크 클릭 이벤트 방지
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAddSubtask(task); }}>
+                하위 태스크 추가
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id, task.title); }}
+                className="text-red-600 focus:bg-red-50 focus:text-red-700"
+              >
+                태스크 삭제
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {hasChildren && isExpanded && (
         <div className="space-y-1">
           {task.subTasks?.map((child) => (
-            <TaskItem key={child.id} task={child} level={level + 1} onToggle={onToggle} onTaskClick={onTaskClick} />
+            <TaskItem
+              key={child.id}
+              task={child}
+              level={level + 1}
+              onToggle={onToggle}
+              onTaskClick={onTaskClick}
+              onAddSubtask={onAddSubtask}
+              onDeleteTask={onDeleteTask}
+            />
           ))}
         </div>
       )}
@@ -188,16 +222,20 @@ const TaskItem = ({
 
 interface ProjectCardProps {
   project: Project
-  onToggleTask: (taskId: number, newStatus: TaskStatus) => void
+  onToggle: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void
   onTaskClick: (task: Task) => void
   onAddTask: (projectId: number) => void;
+  onAddSubtask: (parentTask: Task) => void;
+  onDeleteTask: (taskId: number, taskTitle: string) => void;
 }
 
 const ProjectCard = ({
   project,
-  onToggleTask,
+  onToggle,
   onTaskClick,
   onAddTask,
+  onAddSubtask,
+  onDeleteTask,
 }: ProjectCardProps) => {
   const [isExpanded, setIsExpanded] = useState(true)
 
@@ -250,8 +288,10 @@ const ProjectCard = ({
               <TaskItem
                 key={task.id}
                 task={task}
-                onToggle={onToggleTask}
+                onToggle={onToggle}
                 onTaskClick={onTaskClick}
+                onAddSubtask={onAddSubtask}
+                onDeleteTask={onDeleteTask}
               />
             ))}
           </div>
@@ -274,16 +314,20 @@ const ProjectCard = ({
 
 interface ProjectListProps {
     projects: Project[];
-    onToggleTask: (taskId: number, newStatus: TaskStatus) => void;
+    onToggle: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void
     onTaskClick: (task: Task) => void;
     onAddTask: (projectId: number) => void;
+    onAddSubtask: (parentTask: Task) => void;
+    onDeleteTask: (taskId: number, taskTitle: string) => void;
 }
 
 export function ProjectList({
     projects,
-    onToggleTask,
+    onToggle,
     onTaskClick,
     onAddTask,
+    onAddSubtask,
+    onDeleteTask,
 }: ProjectListProps) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -296,9 +340,11 @@ export function ProjectList({
                     <ProjectCard
                         key={project.id}
                         project={project}
-                        onToggleTask={onToggleTask}
+                        onToggle={onToggle}
                         onTaskClick={onTaskClick}
                         onAddTask={onAddTask}
+                        onAddSubtask={onAddSubtask}
+                        onDeleteTask={onDeleteTask}
                     />
                 ))
             )}
