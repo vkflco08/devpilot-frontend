@@ -34,4 +34,5 @@ export interface Task {
   parentId?: number | null
   subTasks: Task[]
   projectId?: number
+  previousStatus?: TaskStatus | null;
 }

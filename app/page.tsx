@@ -12,7 +12,7 @@ import { useSearchParams } from "next/navigation" // useSearchParams 임포트
 import RequireAuth from "@/components/RequireAuth"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import { useTheme } from "next-themes"
-import HierarchyView from "@/components/hierarchy-view"
+import HierarchyView from "@/components/hierarchy-view/hierarchy-view"
 
 export default function Home() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
