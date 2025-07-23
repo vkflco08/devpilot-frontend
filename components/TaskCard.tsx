@@ -25,6 +25,8 @@ interface TaskCardProps {
   onToggleTask: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void;
   onAddSubtask: (parentTask: Task) => void;
   onDeleteTask: (taskId: number, taskTitle: string) => void;
+  expandedTasks: Set<number>;
+  onToggleExpand: (taskId: number) => void;
 }
 
 export function TaskCard({
@@ -35,6 +37,8 @@ export function TaskCard({
   onToggleTask,
   onAddSubtask,
   onDeleteTask,
+  onToggleExpand,
+  expandedTasks,
 }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -49,7 +53,7 @@ export function TaskCard({
     disabled: isDragOverlay,
   })
 
-  const [isExpanded, setIsExpanded] = useState(false);
+  const isExpanded = expandedTasks.has(task.id);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -100,7 +104,7 @@ export function TaskCard({
               type="button"
               onClick={(e) => {
                 e.stopPropagation()
-                setIsExpanded(!isExpanded)
+                onToggleExpand(task.id)
               }}
               className="mt-1 text-muted-foreground hover:text-foreground transition-colors"
             >
@@ -192,6 +196,8 @@ export function TaskCard({
                 onToggleTask={onToggleTask} 
                 onAddSubtask={onAddSubtask}
                 onDeleteTask={onDeleteTask} 
+                expandedTasks={expandedTasks}
+                onToggleExpand={onToggleExpand}
               />
             ))}
           </div>

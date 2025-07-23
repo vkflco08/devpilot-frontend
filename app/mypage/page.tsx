@@ -6,7 +6,7 @@ import { User, Settings, Clock, Calendar, ArrowLeft, CheckCircle, BarChart2, Edi
 import { ProjectStatus } from "@/lib/types"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import { type Project } from "@/lib/types"
-import { ProjectDetailDialog } from "@/components/project-detail-dialog"
+import { ProjectDetailDialog } from "@/components/ProjectDetailDialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"

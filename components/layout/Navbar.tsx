@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import { PlusCircle } from "lucide-react"
 
 export default function Navbar() {

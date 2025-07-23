@@ -9,8 +9,8 @@
 "use client";
 
 import React from 'react';
-import { CreateTaskDialog } from "@/components/create-task-dialog";
-import { TaskDetailDialog } from "@/components/task-detail-dialog";
+import { CreateTaskDialog } from "@/components/CreateTaskDialog";
+import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import type { Task } from "@/lib/types"; // Task, Project 타입 임포트
 import type { Task as OrigTask } from "@/lib/types"; // for handleCreateTask, handleUpdateTask
 

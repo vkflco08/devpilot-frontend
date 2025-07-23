@@ -6,11 +6,11 @@ import { DndContext, closestCenter, DragOverlay } from "@dnd-kit/core"
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { type Task as OrigTask, TaskStatus } from "@/lib/types"
 import { buildTaskTree, getRootTasks, flattenTaskTree } from "@/lib/task-utils"
-import { TaskCard } from "@/components/task-card"
-import { TaskColumn } from "@/components/task-column"
-import { CreateTaskDialog } from "@/components/create-task-dialog"
-import { TaskDetailDialog } from "@/components/task-detail-dialog"
-import { TaskFilter } from "@/components/task-filter"
+import { TaskCard } from "@/components/TaskCard"
+import { TaskColumn } from "@/components/TaskColumn"
+import { CreateTaskDialog } from "@/components/CreateTaskDialog"
+import { TaskDetailDialog } from "@/components/TaskDetailDialog"
+import { TaskFilter } from "@/components/TaskFilter"
 import { BarChart3, PlusCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Button, } from "@/components/ui/button"
@@ -46,6 +46,37 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [taskLoading, setTaskLoading] = useState(false)
+
+  const [expandedTasks, setExpandedTasks] = useState<Set<number>>(() => {
+    try {
+      // HierarchyView와 충돌하지 않도록 고유한 키 사용
+      const item = window.localStorage.getItem('task-pilot:dashboard:expanded-tasks');
+      return item ? new Set(JSON.parse(item)) : new Set();
+    } catch (error) {
+      console.error(error);
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('task-pilot:dashboard:expanded-tasks', JSON.stringify(Array.from(expandedTasks)));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [expandedTasks]);
+
+  const handleToggleExpand = (taskId: number) => {
+    setExpandedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
 
   const handleFilterChange = useCallback((filters: { tag: string; priority: number; search: string }) => {
     setFilterOptions(filters)
@@ -460,6 +491,8 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         onToggleTask={handleToggleTaskStatus}
                         onAddSubtask={handleAddSubtask}
                         onDeleteTask={handleDeleteTask}
+                        onToggleExpand={handleToggleExpand}
+                        expandedTasks={expandedTasks}
                       />
                     ))}
                   </SortableContext>
@@ -476,6 +509,8 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         onToggleTask={handleToggleTaskStatus}
                         onAddSubtask={handleAddSubtask}
                         onDeleteTask={handleDeleteTask}
+                        onToggleExpand={handleToggleExpand}
+                        expandedTasks={expandedTasks}
                       />
                     ))}
                   </SortableContext>
@@ -492,6 +527,8 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         onToggleTask={handleToggleTaskStatus}
                         onAddSubtask={handleAddSubtask}
                         onDeleteTask={handleDeleteTask}
+                        onToggleExpand={handleToggleExpand}
+                        expandedTasks={expandedTasks}
                       />
                     ))}
                   </SortableContext>
@@ -509,6 +546,8 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
                         onToggleTask={handleToggleTaskStatus}
                         onAddSubtask={handleAddSubtask}
                         onDeleteTask={handleDeleteTask}
+                        expandedTasks={expandedTasks}
+                        onToggleExpand={handleToggleExpand}
                       />
                     </div>
                   ) : null}
