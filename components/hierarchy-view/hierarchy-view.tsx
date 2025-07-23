@@ -41,6 +41,62 @@ export default function HierarchyView({ isCreateDialogOpen, setIsCreateDialogOpe
   const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null) // 부모 태스크 상태
   const [selectedProjectIdForCreate, setSelectedProjectIdForCreate] = useState<number | null>(null); // 태스크 생성 시 사용할 프로젝트 ID
 
+  // Set의 초기값을 localStorage에서 가져오도록 수정
+  const [expandedTasks, setExpandedTasks] = useState<Set<number>>(() => {
+    try {
+        const item = window.localStorage.getItem('task-pilot-expanded-tasks');
+        return item ? new Set(JSON.parse(item)) : new Set();
+    } catch (error) {
+        console.error(error);
+        return new Set();
+    }
+  });
+
+  // expandedTasks 상태가 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+      try {
+          window.localStorage.setItem('task-pilot-expanded-tasks', JSON.stringify(Array.from(expandedTasks)));
+      } catch (error) {
+          console.error(error);
+      }
+  }, [expandedTasks]);
+
+  const handleToggleExpand = (taskId: number) => {
+    setExpandedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const [expandedProjects, setExpandedProjects] = useState<Set<number>>(() => {
+    try {
+        const item = window.localStorage.getItem('task-pilot-expanded-projects');
+        return item ? new Set(JSON.parse(item)) : new Set();
+    } catch (error) { return new Set(); }
+  });
+
+  useEffect(() => {
+    try {
+        window.localStorage.setItem('task-pilot-expanded-projects', JSON.stringify(Array.from(expandedProjects)));
+    } catch (error) { console.error(error); }
+  }, [expandedProjects]);
+
+  const handleToggleProjectExpand = (projectId: number) => {
+    setExpandedProjects(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(projectId)) {
+            newSet.delete(projectId);
+        } else {
+            newSet.add(projectId);
+        }
+        return newSet;
+    });
+  };
 
   // 프로젝트와 태스크 데이터를 함께 페칭하는 함수
   const fetchProjectsAndTasks = useCallback(async () => {
@@ -248,6 +304,10 @@ export default function HierarchyView({ isCreateDialogOpen, setIsCreateDialogOpe
         {/* ProjectList 컴포넌트 렌더링 */}
         <ProjectList
             projects={projects}
+            expandedTasks={expandedTasks}
+            expandedProjects={expandedProjects}
+            onToggleExpand={handleToggleExpand}
+            onToggleProjectExpand={handleToggleProjectExpand}
             onToggle={toggleTask}
             onTaskClick={handleTaskClick}
             onAddTask={handleAddTaskToProject}

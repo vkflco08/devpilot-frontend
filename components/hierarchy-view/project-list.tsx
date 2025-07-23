@@ -27,6 +27,8 @@ import type { Task, Project } from "@/lib/types"
 const TaskItem = ({
   task,
   level = 0,
+  expandedTasks,
+  onToggleExpand,
   onToggle,
   onTaskClick,
   onAddSubtask,
@@ -34,12 +36,14 @@ const TaskItem = ({
 }: {
   task: Task
   level?: number
+  expandedTasks: Set<number>;
+  onToggleExpand: (taskId: number) => void;
   onToggle: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void 
   onTaskClick: (task: Task) => void
   onAddSubtask: (parentTask: Task) => void
   onDeleteTask: (taskId: number, taskTitle: string) => void 
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const isExpanded = expandedTasks.has(task.id);
 
   const getPriorityColor = (priority?: number) => {
     switch (priority) {
@@ -122,7 +126,7 @@ const TaskItem = ({
               className="h-6 w-6 p-0"
               onClick={(e) => {
                 e.stopPropagation()
-                setIsExpanded(!isExpanded)
+                onToggleExpand(task.id);
               }}
             >
               {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -208,6 +212,8 @@ const TaskItem = ({
               key={child.id}
               task={child}
               level={level + 1}
+              expandedTasks={expandedTasks}
+              onToggleExpand={onToggleExpand}
               onToggle={onToggle}
               onTaskClick={onTaskClick}
               onAddSubtask={onAddSubtask}
@@ -223,6 +229,10 @@ const TaskItem = ({
 
 interface ProjectCardProps {
   project: Project
+  expandedTasks: Set<number>;
+  onToggleExpand: (taskId: number) => void;
+  expandedProjects: Set<number>;
+  onToggleProjectExpand: (projectId: number) => void;
   onToggle: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void
   onTaskClick: (task: Task) => void
   onAddTask: (projectId: number) => void;
@@ -232,13 +242,17 @@ interface ProjectCardProps {
 
 const ProjectCard = ({
   project,
+  expandedTasks,
+  onToggleExpand,
+  expandedProjects,
+  onToggleProjectExpand,
   onToggle,
   onTaskClick,
   onAddTask,
   onAddSubtask,
   onDeleteTask,
 }: ProjectCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const isExpanded = expandedProjects.has(project.id);
 
   const getAllTasksFlat = (tasks: Task[]): Task[] => {
     let allTasks: Task[] = []
@@ -266,7 +280,7 @@ const ProjectCard = ({
               {allTasks.length} tasks
             </Badge>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 p-0">
+          <Button variant="ghost" size="sm" onClick={() => onToggleProjectExpand(project.id)} className="h-8 w-8 p-0">
             {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </div>
@@ -293,6 +307,8 @@ const ProjectCard = ({
                 onTaskClick={onTaskClick}
                 onAddSubtask={onAddSubtask}
                 onDeleteTask={onDeleteTask}
+                expandedTasks={expandedTasks}
+                onToggleExpand={onToggleExpand}
               />
             ))}
           </div>
@@ -315,6 +331,10 @@ const ProjectCard = ({
 
 interface ProjectListProps {
     projects: Project[];
+    expandedTasks: Set<number>;
+    onToggleExpand: (taskId: number) => void;
+    expandedProjects: Set<number>;
+    onToggleProjectExpand: (projectId: number) => void;
     onToggle: (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => void
     onTaskClick: (task: Task) => void;
     onAddTask: (projectId: number) => void;
@@ -324,6 +344,10 @@ interface ProjectListProps {
 
 export function ProjectList({
     projects,
+    expandedTasks,
+    onToggleExpand,
+    onToggleProjectExpand,
+    expandedProjects,
     onToggle,
     onTaskClick,
     onAddTask,
@@ -341,6 +365,10 @@ export function ProjectList({
                     <ProjectCard
                         key={project.id}
                         project={project}
+                        expandedTasks={expandedTasks}
+                        onToggleExpand={onToggleExpand}
+                        expandedProjects={expandedProjects}
+                        onToggleProjectExpand={onToggleProjectExpand}
                         onToggle={onToggle}
                         onTaskClick={onTaskClick}
                         onAddTask={onAddTask}
