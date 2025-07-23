@@ -114,6 +114,7 @@ const TaskItem = ({
         onClick={() => onTaskClick(task)}
       >
         <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center justify-center w-6 h-6">
           {hasChildren && (
             <Button
               variant="ghost"
@@ -127,8 +128,8 @@ const TaskItem = ({
               {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </Button>
           )}
-
-        <Checkbox
+          </div>
+          <Checkbox
             checked={isCompleted}
             onCheckedChange={() => {
             let newStatus: TaskStatus;
@@ -148,7 +149,7 @@ const TaskItem = ({
             }}
             onClick={(e) => e.stopPropagation()}
             className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
-        />
+          />
 
           <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
 
