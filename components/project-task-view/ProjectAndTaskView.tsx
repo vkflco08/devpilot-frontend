@@ -44,7 +44,7 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
   // Set의 초기값을 localStorage에서 가져오도록 수정
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(() => {
     try {
-        const item = window.localStorage.getItem('task-pilot-expanded-tasks');
+        const item = window.localStorage.getItem('task-pilot:hierarchy:expanded-tasks');
         return item ? new Set(JSON.parse(item)) : new Set();
     } catch (error) {
         console.error(error);
@@ -55,7 +55,7 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
   // expandedTasks 상태가 변경될 때마다 localStorage에 저장
   useEffect(() => {
       try {
-          window.localStorage.setItem('task-pilot-expanded-tasks', JSON.stringify(Array.from(expandedTasks)));
+          window.localStorage.setItem('task-pilot:hierarchy:expanded-tasks', JSON.stringify(Array.from(expandedTasks)));
       } catch (error) {
           console.error(error);
       }
@@ -75,14 +75,14 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
 
   const [expandedProjects, setExpandedProjects] = useState<Set<number>>(() => {
     try {
-        const item = window.localStorage.getItem('task-pilot-expanded-projects');
+        const item = window.localStorage.getItem('task-pilot:hierarchy:expanded-projects');
         return item ? new Set(JSON.parse(item)) : new Set();
     } catch (error) { return new Set(); }
   });
 
   useEffect(() => {
     try {
-        window.localStorage.setItem('task-pilot-expanded-projects', JSON.stringify(Array.from(expandedProjects)));
+        window.localStorage.setItem('task-pilot:hierarchy:expanded-projects', JSON.stringify(Array.from(expandedProjects)));
     } catch (error) { console.error(error); }
   }, [expandedProjects]);
 
