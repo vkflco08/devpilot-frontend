@@ -59,7 +59,11 @@ export function CreateTaskDialog({
       if (parentTask) {
         setSelectedParentId(parentTask.id)
         setSelectedProjectId(parentTask.projectId ?? 'none')
-        setStatus(parentTask.status)
+        if (parentTask.status === TaskStatus.DONE) {
+          setStatus(TaskStatus.TODO); // 부모가 완료 상태면, 새 하위 태스크는 '할 일'로 시작
+        } else {
+          setStatus(parentTask.status); // 그 외에는 부모 상태를 따라감
+        }
         // Optionally inherit tags or other properties
         if (parentTask.tags) {
           setTags(parentTask.tags)
