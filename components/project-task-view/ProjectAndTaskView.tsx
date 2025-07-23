@@ -13,8 +13,8 @@ import LoadingSpinner from "@/components/LoadingSpinner"
 import axios from "@/lib/axiosInstance"
 import { buildTaskTree } from "@/lib/task-utils"
 
-import { ProjectList } from "@/components/hierarchy-view/project-list" // 새로 분리한 ProjectList 임포트
-import { TaskDialogsManager } from "@/components/hierarchy-view/task-dialogs-manager" // 새로 분리한 TaskDialogsManager 임포트
+import { ProjectList } from "@/components/project-task-view/ProjectList" // 새로 분리한 ProjectList 임포트
+import { TaskDialogsManager } from "@/components/project-task-view/TaskDialogsManager" // 새로 분리한 TaskDialogsManager 임포트
 
 import { TaskStatus } from "@/lib/types"
 import type { Task as OrigTask, Project as OrigProject } from "@/lib/types"
@@ -25,12 +25,12 @@ interface Task extends OrigTask {}
 interface Project extends OrigProject {}
 
 // 외부에서 받는 props 정의 (pages/index.tsx에서 전달됨)
-interface HierarchyViewProps {
+interface ProjectAndTaskViewProps {
     isCreateDialogOpen: boolean;
     setIsCreateDialogOpen: (open: boolean) => void;
 }
 
-export default function HierarchyView({ isCreateDialogOpen, setIsCreateDialogOpen }: HierarchyViewProps) {
+export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDialogOpen }: ProjectAndTaskViewProps) {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
