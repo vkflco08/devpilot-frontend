@@ -13,9 +13,13 @@ import RequireAuth from "@/components/RequireAuth"
 import { useMyInfo } from "@/lib/hooks/useMyInfo"
 import { useTheme } from "next-themes"
 import HierarchyView from "@/components/project-task-view/ProjectAndTaskView"
+import ChatPanel from "@/components/chatbot/ChatPanel"
+import ChatToggleButton from "@/components/chatbot/ChatToggleButton"
 
 export default function Home() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isChatPanelOpen, setIsChatPanelOpen] = useState(false)
+
   const router = useRouter()
   const searchParams = useSearchParams() // URL 쿼리 파라미터를 읽기 위한 훅
   const { myInfo, loading, error } = useMyInfo()
@@ -54,8 +58,22 @@ export default function Home() {
     : "bg-gradient-to-br from-gray-50 to-gray-200"
   const textClass = resolved === "dark" ? "text-gray-300" : "text-muted-foreground"
 
+  const currentUserId = myInfo?.id || 0; // ✨ myInfo.id를 사용하거나, 없을 경우 기본값 0
+
   return (
     <RequireAuth>
+      {!loading && !error && (
+        <ChatPanel 
+          isOpen={isChatPanelOpen} 
+          onClose={() => setIsChatPanelOpen(false)} 
+          userId={currentUserId}
+        />
+      )}
+
+      {!isChatPanelOpen && (
+        <ChatToggleButton onClick={() => setIsChatPanelOpen(true)} />
+      )}
+
       <div className="min-h-screen">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="container mx-auto px-4 py-4 border-b">

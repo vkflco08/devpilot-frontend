@@ -134,7 +134,7 @@ instance.interceptors.response.use(
 
     // 3. Access Token 만료 (`401 Unauthorized`) 감지 및 커스텀 에러 코드 확인
     //    -> 백엔드 `BaseResponse`의 `resultCode`가 `'ACCESS_TOKEN_EXPIRED'`인지 정확히 확인
-    const backendResponse: BaseResponse<any> | undefined = error.response?.data;
+    const backendResponse: BaseResponse<any> | undefined = error.response?.data as BaseResponse<any> | undefined;
     const isAccessTokenExpired = error.response?.status === 401 && backendResponse?.resultCode === 'ACCESS_TOKEN_EXPIRED';
 
     if (!isAccessTokenExpired) {
