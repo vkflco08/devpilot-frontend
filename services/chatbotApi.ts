@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export interface ChatMessage {
     type: string;
   content: string;
@@ -24,3 +26,27 @@ export async function sendMessageToAgent(payload: ChatRequestPayload): Promise<s
   const data = await res.json();
   return data.response;
 }
+
+export interface DBChatMessage {
+    id: number;
+    user_id: number;
+    sender: "user" | "bot";
+    content: string;
+    timestamp: string;
+}
+  
+export interface ChatHistoryApiResponse {
+    messages: DBChatMessage[];
+}
+  
+export const fetchChatHistory = async (userId: number): Promise<ChatHistoryApiResponse> => {
+    try {
+        const response = await axios.get<ChatHistoryApiResponse>(`${process.env.NEXT_PUBLIC_LLM_AGENT_URL}/chat/history/${userId}`);
+        
+        // response.data가 null 또는 undefined일 경우를 대비하여 빈 배열을 반환합니다.
+        return response.data || { messages: [] }; 
+    } catch (error) {
+        console.error("Failed to fetch chat history:", error);
+        throw error;
+    }
+};
