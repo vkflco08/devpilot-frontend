@@ -1,8 +1,12 @@
+import { llmAgentApi } from "@/lib/axiosInstance";
 import axios from "axios";
 
 export interface ChatMessage {
-    type: string;
-  content: string;
+    type: "human" | "ai" | "system" | "tool" | "user" | "bot" | "error";
+    content: string;
+    tool_calls?: Array<{ id: string; name: string; args: { [key: string]: any } }>; 
+    tool_call_id?: string;
+    name?: string;
 }
 
 export interface ChatRequestPayload {
@@ -11,20 +15,22 @@ export interface ChatRequestPayload {
   user_id?: number;
 }
 
-export async function sendMessageToAgent(payload: ChatRequestPayload): Promise<string> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_LLM_AGENT_URL}/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export interface AgentResponse {
+    response: string;
+    full_chat_history: ChatMessage[];
+}
 
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.detail || "챗봇 응답 실패");
+export async function sendMessageToAgent(payload: ChatRequestPayload): Promise<AgentResponse> {
+  try {
+      const res = await llmAgentApi.post<AgentResponse>("/chat", payload);
+      return res.data;
+  } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response) {
+          const errorData = error.response.data;
+          throw new Error(errorData.detail || errorData.message || "챗봇 응답 실패");
+      }
+      throw new Error(error.message || "알 수 없는 챗봇 응답 실패");
   }
-
-  const data = await res.json();
-  return data.response;
 }
 
 export interface DBChatMessage {
@@ -41,9 +47,7 @@ export interface ChatHistoryApiResponse {
   
 export const fetchChatHistory = async (userId: number): Promise<ChatHistoryApiResponse> => {
     try {
-        const response = await axios.get<ChatHistoryApiResponse>(`${process.env.NEXT_PUBLIC_LLM_AGENT_URL}/chat/history/${userId}`);
-        
-        // response.data가 null 또는 undefined일 경우를 대비하여 빈 배열을 반환합니다.
+        const response = await llmAgentApi.get<ChatHistoryApiResponse>(`${process.env.NEXT_PUBLIC_LLM_AGENT_URL}/chat/history/${userId}`);
         return response.data || { messages: [] }; 
     } catch (error) {
         console.error("Failed to fetch chat history:", error);

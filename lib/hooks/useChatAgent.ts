@@ -1,7 +1,16 @@
 import { useState, useCallback, useEffect } from "react";
-import axios from "axios";
-import { sendMessageToAgent, ChatMessage } from "@/services/chatbotApi"; // ChatMessage도 함께 임포트
+import { sendMessageToAgent, ChatMessage } from "@/services/chatbotApi"; 
 import { fetchChatHistory } from "@/services/chatbotApi";
+import { llmAgentApi } from "@/lib/axiosInstance";
+
+export type Message = { 
+  from: "user" | "bot";
+  text: string;
+  type: "human" | "ai" | "system" | "tool" | "user" | "bot" | "error";
+  tool_calls?: Array<{ id: string; name: string; args: { [key: string]: any } }>;
+  tool_call_id?: string;
+  name?: string;
+};
 
 interface UseChatAgentReturn {
   messages: Message[];
@@ -12,11 +21,9 @@ interface UseChatAgentReturn {
   resetChat: () => void;
 }
 
-type Message = { from: "user" | "bot"; text: string; };
-
 export const useChatAgent = (userId: number): UseChatAgentReturn => {
   const [messages, setMessages] = useState<Message[]>([
-    { from: "bot", text: "안녕하세요! DevPilot 에이전트입니다. 무엇을 도와드릴까요?" },
+    { from: "bot", text: "안녕하세요! DevPilot 에이전트입니다. 무엇을 도와드릴까요?", type: "bot" },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,7 +32,7 @@ export const useChatAgent = (userId: number): UseChatAgentReturn => {
   // 에이전트 상태 확인 API
   const checkAgentHealth = useCallback(async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_LLM_AGENT_URL}/health`);
+      const response = await llmAgentApi.get(`/health`);
       if (response.data.status !== "ok") {
         throw new Error(`Agent is not healthy: ${response.data.message || response.statusText}`);
       }
@@ -34,11 +41,11 @@ export const useChatAgent = (userId: number): UseChatAgentReturn => {
       console.error("LLM Agent Health Check Failed:", error);
       setMessages((prev) => [
         ...prev,
-        { from: "bot", text: "❌ 에이전트 서버 연결에 문제가 발생했습니다." },
+        { from: "bot", text: "❌ 에이전트 서버 연결에 문제가 발생했습니다.", type: "error" },
       ]);
       return false;
     }
-  }, []); // 의존성 배열 비워두어 한 번만 생성되도록 함
+  }, []);
 
   // 채팅 기록 로딩
   useEffect(() => {
@@ -46,31 +53,34 @@ export const useChatAgent = (userId: number): UseChatAgentReturn => {
       setIsLoading(true);
       try {
         const historyResponse = await fetchChatHistory(userId);
-        const chatMessages = historyResponse.messages || []; // 응답 객체 안에 messages 배열이 없을 경우를 대비하여 빈 배열 기본값 설정
+        const chatMessages = historyResponse.messages || [];
         const loadedMessages: Message[] = chatMessages.map((msg) => ({
           from: msg.sender === "user" ? "user" : "bot",
           text: msg.content,
+          type: msg.sender === "user" ? "user" : "bot",
         }));
         
-        // 데이터가 없는 경우 기본 메시지 추가
         if (loadedMessages.length === 0) {
-          setMessages([{ from: "bot", text: "안녕하세요! DevPilot 에이전트입니다. 무엇을 도와드릴까요?" }]);
+          setMessages([{ from: "bot", text: "안녕하세요! DevPilot 에이전트입니다. 무엇을 도와드릴까요?", type: "bot" }]);
         } else {
-          setMessages(loadedMessages);
+          const filteredLoadedMessages = loadedMessages.filter(msg => 
+            msg.type !== "error" && !msg.text.includes("❌ 메시지 전송 중 오류 발생:")
+          );
+          setMessages(filteredLoadedMessages);
         }
-        setHasLoadedHistory(true); // 기록 로딩 완료
+        setHasLoadedHistory(true);
       } catch (error) {
         console.error("Failed to load chat history:", error);
         setMessages((prev) => [
           ...prev,
-          { from: "bot", text: "❌ 채팅 기록을 불러오는 데 실패했습니다." },
+          { from: "bot", text: "❌ 채팅 기록을 불러오는 데 실패했습니다.", type: "error" },
         ]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (userId && !hasLoadedHistory) { // userId가 유효하고 아직 기록을 불러오지 않았다면
+    if (userId && !hasLoadedHistory) {
       loadChatHistory();
     }
   }, [userId, hasLoadedHistory]);
@@ -80,42 +90,62 @@ export const useChatAgent = (userId: number): UseChatAgentReturn => {
 
     setIsLoading(true);
 
-    const userMessage: Message = { from: "user", text: input };
-    const messagesAfterUserSend = [...messages, userMessage];
-    setMessages(messagesAfterUserSend);
+    const userMessageText = input;
+    const newUserMessageForUI: Message = { from: "user", text: userMessageText, type: "user" }; 
+    
+    setMessages((prevMessages) => [...prevMessages, newUserMessageForUI]);
     setInput("");
 
     try {
       const isAgentHealthy = await checkAgentHealth();
       if (!isAgentHealthy) {
+        setMessages((prev) => prev.slice(0, prev.length - 1).concat([
+          { from: "bot", text: "❌ 에이전트 서버 연결에 문제가 발생했습니다.", type: "error" }
+        ]));
         return;
       }
 
-      const chatHistory: ChatMessage[] = messagesAfterUserSend.map((msg) => ({
-        type: msg.from === "user" ? "user" : "bot",
-        content: msg.text,
-      }));
+      const chatHistoryForAgent: ChatMessage[] = messages 
+        .filter(msg => 
+          msg.type !== "error" && 
+          !(msg.type === "bot" && msg.text.includes("❌ 메시지 전송 중 오류 발생:"))
+        ) 
+        .map(msg => ({
+          type: msg.type,
+          content: msg.text,
+          tool_calls: msg.tool_calls,
+          tool_call_id: msg.tool_call_id,
+          name: msg.name,
+        }));
       
-      const botResponse = await sendMessageToAgent({
-        user_input: userMessage.text, 
-        chat_history: chatHistory,
+      const { response: botResponseText } = await sendMessageToAgent({
+        user_input: userMessageText,
+        chat_history: chatHistoryForAgent,
         user_id: userId,
       });
 
-      setMessages((prev) => [...prev, { from: "bot", text: botResponse }]);
+      setMessages((prevMessages) => {
+        const updated = [...prevMessages];
+        updated.push({ from: "bot", text: botResponseText, type: "ai" });
+        return updated;
+      });
+
     } catch (err: any) {
       console.error("Failed to send message to agent:", err);
-      setMessages((prev) => [
-        ...prev,
-        { from: "bot", text: `❌ 메시지 전송 중 오류 발생: ${err.message}. 잠시 후 다시 시도해주세요.` },
-      ]);
+      setMessages((prev) => {
+        const stateWithoutOptimisticUserMessage = prev.slice(0, prev.length - 1);
+        return [
+          ...stateWithoutOptimisticUserMessage,
+          { from: "bot", text: `❌ 메시지 전송 중 오류 발생: ${err.message}. 잠시 후 다시 시도해주세요.`, type: "error" },
+        ];
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, checkAgentHealth, userId]); // 의존성 배열에 필요한 상태와 함수 포함
+  }, [input, isLoading, messages, checkAgentHealth, userId]);
 
   const resetChat = useCallback(() => {
-    setMessages([{ from: "bot", text: "안녕하세요! DevPilot 에이전트입니다. 무엇을 도와드릴까요?" }]);
+    setMessages([{ from: "bot", text: "안녕하세요! DevPilot 에이전트입니다. 무엇을 도와드릴까요?", type: "bot" }]);
     setInput("");
     setIsLoading(false);
   }, []);

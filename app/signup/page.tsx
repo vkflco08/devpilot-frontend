@@ -5,7 +5,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import axios from "@/lib/axiosInstance"
+import { springApi } from "@/lib/axiosInstance"
 import { Loader2 } from "lucide-react"
 import Navbar from '@/components/layout/Navbar'
 
@@ -63,7 +63,7 @@ export default function SignUpPage() {
     }
     setLoading(true)
     try {
-      const response = await axios.post("/api/member/signup", {
+      const response = await springApi.post("/api/member/signup", {
         loginId: form.loginId,
         password: form.password,
         name: form.name,
