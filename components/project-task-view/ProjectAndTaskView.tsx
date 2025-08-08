@@ -10,11 +10,11 @@
 
 import { useState, useEffect, useCallback } from "react"
 import LoadingSpinner from "@/components/LoadingSpinner"
-import axios from "@/lib/axiosInstance"
+import { springApi } from "@/lib/axiosInstance"
 import { buildTaskTree } from "@/lib/task-utils"
 
-import { ProjectList } from "@/components/project-task-view/ProjectList" // 새로 분리한 ProjectList 임포트
-import { TaskDialogsManager } from "@/components/project-task-view/TaskDialogsManager" // 새로 분리한 TaskDialogsManager 임포트
+import { ProjectList } from "@/components/project-task-view/ProjectList"
+import { TaskDialogsManager } from "@/components/project-task-view/TaskDialogsManager" 
 
 import { TaskStatus } from "@/lib/types"
 import type { Task as OrigTask, Project as OrigProject } from "@/lib/types"
@@ -34,12 +34,11 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null) // TaskDetailDialog 제어용
-  const [taskLoading, setTaskLoading] = useState(false) // 태스크 수정/삭제/생성 시 로딩
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null) 
+  const [taskLoading, setTaskLoading] = useState(false) 
 
-  // CreateTaskDialog 제어용 (일부 상태는 TaskDialogsManager로 이동)
-  const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null) // 부모 태스크 상태
-  const [selectedProjectIdForCreate, setSelectedProjectIdForCreate] = useState<number | null>(null); // 태스크 생성 시 사용할 프로젝트 ID
+  const [parentTaskForCreate, setParentTaskForCreate] = useState<Task | null>(null) 
+  const [selectedProjectIdForCreate, setSelectedProjectIdForCreate] = useState<number | null>(null); 
 
   // Set의 초기값을 localStorage에서 가져오도록 수정
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(() => {
@@ -98,16 +97,14 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
     });
   };
 
-  // 프로젝트와 태스크 데이터를 함께 페칭하는 함수
   const fetchProjectsAndTasks = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await axios.get("/api/project/mypage") // /mypage 엔드포인트에서 프로젝트 내 태스크들을 가져옴
+      const res = await springApi.get("/api/project/mypage") 
       if (res.data.resultCode === "SUCCESS") {
         const fetchedProjects: Project[] = res.data.data.map((proj: any) => ({
           ...proj,
-          // 백엔드에서 받은 플랫한 태스크 리스트를 트리로 변환
           tasks: buildTaskTree(proj.tasks || []) 
         }))
         setProjects(fetchedProjects)
@@ -120,20 +117,18 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
     } finally {
       setLoading(false)
     }
-  }, []); // useCallback 사용하여 의존성 배열을 비워둠 (변하지 않는 함수)
+  }, []); 
 
 
   useEffect(() => {
     fetchProjectsAndTasks()
-  }, [fetchProjectsAndTasks]) // fetchProjectsAndTasks가 변경될 때마다 실행 (useCallback 사용 시 안정적)
+  }, [fetchProjectsAndTasks]) 
 
 
-  // 태스크 완료 상태 토글 (ProjectCard에서 호출됨)
   const toggleTask = async (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => {
     setTaskLoading(true)
     try {
-        // ✨ previousStatus를 함께 전송
-        const response = await axios.put(`/api/task/${taskId}`, { 
+        const response = await springApi.put(`/api/task/${taskId}`, { 
             status: newStatus,
             previousStatus: previousStatusToSend 
         })
@@ -154,58 +149,26 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
     setSelectedTask(task)
   }
 
-  // ProjectCard의 '태스크 추가' 버튼 클릭 시 호출
   const handleAddTaskToProject = useCallback((projectId: number) => {
-    setParentTaskForCreate(null); // 최상위 태스크이므로 부모 태스크 없음
-    setSelectedProjectIdForCreate(projectId); // 선택된 프로젝트 ID 설정
-    setIsCreateDialogOpen(true); // CreateTaskDialog 열기
-  }, [setIsCreateDialogOpen]); // setIsCreateDialogOpen이 변경될 때마다 재생성
+    setParentTaskForCreate(null);
+    setSelectedProjectIdForCreate(projectId); 
+    setIsCreateDialogOpen(true); 
+  }, [setIsCreateDialogOpen]); 
 
-  // TaskDetailDialog의 '하위 태스크 추가' 버튼 클릭 시 호출
   const handleAddSubtask = useCallback((parentTask: Task) => {
-    setSelectedTask(null); // 상세 다이얼로그 닫기
-    // 다이얼로그 닫힘 애니메이션을 위한 짧은 지연
+    setSelectedTask(null); 
     setTimeout(() => {
       setParentTaskForCreate(parentTask);
       setSelectedProjectIdForCreate(parentTask.projectId || null);
-      setIsCreateDialogOpen(true); // CreateTaskDialog 열기
+      setIsCreateDialogOpen(true); 
     }, 100);
-  }, [setIsCreateDialogOpen]); // setIsCreateDialogOpen이 변경될 때마다 재생성
+  }, [setIsCreateDialogOpen]); 
 
-  // ✨ 태스크 복제 핸들러
-  const handleDuplicateTask = async (taskToDuplicate: Task) => {
-    setTaskLoading(true);
-    try {
-      const response = await axios.post("/api/task", {
-        title: `${taskToDuplicate.title} (복제됨)`, // 복제된 태스크임을 표시
-        description: taskToDuplicate.description,
-        status: TaskStatus.TODO, // 복제된 태스크는 기본적으로 TODO
-        tags: taskToDuplicate.tags,
-        priority: taskToDuplicate.priority,
-        dueDate: taskToDuplicate.dueDate,
-        estimatedTimeHours: taskToDuplicate.estimatedTimeHours,
-        projectId: taskToDuplicate.projectId,
-        parentId: taskToDuplicate.parentId,
-        // previousStatus는 복제 시에는 필요 없음 (새로운 태스크이므로)
-      });
-      if (response.data?.resultCode === "SUCCESS") {
-        await fetchProjectsAndTasks();
-      } else {
-        alert(response.data?.message || "태스크 복제에 실패했습니다.");
-      }
-    } catch (e: any) {
-      alert(e?.response?.data?.message || "태스크 복제 중 오류가 발생했습니다.");
-    } finally {
-      setTaskLoading(false);
-    }
-  };
-
-  // CreateTaskDialog의 onCreateTask prop으로 전달될 함수
   const handleCreateTask = async (newTask: OrigTask) => {
     setTaskLoading(true);
     try {
         console.log("newTask parentId", newTask.parentId)
-      const response = await axios.post("/api/task/new", {
+      const response = await springApi.post("/api/task/new", {
         title: newTask.title,
         description: newTask.description === '' ? '' : (newTask.description || null),
         status: newTask.status,
@@ -232,11 +195,10 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
     }
   };
 
-  // TaskDetailDialog의 onUpdateTask prop으로 전달될 함수
   const handleUpdateTask = async (updatedTask: OrigTask) => {
     setTaskLoading(true);
     try {
-      const response = await axios.put(`/api/task/${updatedTask.id}`, {
+      const response = await springApi.put(`/api/task/${updatedTask.id}`, {
         title: updatedTask.title,
         description: updatedTask.description === '' ? '' : (updatedTask.description || null),
         status: updatedTask.status,
@@ -244,7 +206,7 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
         priority: updatedTask.priority || null,
         dueDate: updatedTask.dueDate || null,
         estimatedTimeHours: updatedTask.estimatedTimeHours || null,
-        actualTimeHours: updatedTask.actualTimeHours || null, // 이 필드는 TaskCreateRequest/UpdateRequest에 없으면 문제될 수 있습니다.
+        actualTimeHours: updatedTask.actualTimeHours || null,
       });
       if (response.data?.resultCode === "SUCCESS") {
         await fetchProjectsAndTasks();
@@ -258,12 +220,11 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
     }
   };
 
-  // TaskDetailDialog의 onDeleteTask prop으로 전달될 함수
   const handleDeleteTask = async (taskId: number) => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
     setTaskLoading(true);
     try {
-      const response = await axios.delete(`/api/task/${taskId}`);
+      const response = await springApi.delete(`/api/task/${taskId}`);
       if (response.data?.resultCode === "SUCCESS") {
         await fetchProjectsAndTasks();
       } else {
@@ -289,7 +250,7 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
   }
 
   const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }))
-  const allTasksFlat = projects.flatMap(p => p.tasks || []) // 모든 태스크를 플랫하게
+  const allTasksFlat = projects.flatMap(p => p.tasks || [])
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -328,7 +289,7 @@ export default function ProjectAndTaskView({ isCreateDialogOpen, setIsCreateDial
             handleDeleteTask={handleDeleteTask}
             handleAddSubtask={handleAddSubtask}
             projects={projectOptions}
-            existingTasks={allTasksFlat} // 플랫한 모든 태스크를 전달
+            existingTasks={allTasksFlat}
         />
       </div>
     </div>
