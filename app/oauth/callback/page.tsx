@@ -21,7 +21,7 @@ export default function OAuthCallback() {
     }
 
     if (auth) {
-      auth.login(accessToken);
+      auth.login({ accessToken });
       router.push('/'); // 로그인 성공 후 홈으로
     }
   }, [auth, router]);

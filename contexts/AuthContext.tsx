@@ -1,12 +1,12 @@
 'use client';
 
 import React, { createContext, useEffect, useState, type ReactNode } from 'react';
-import axios from '@/lib/axiosInstance';
+import { springApi } from '@/lib/axiosInstance';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (tokenInfo: { accessToken: string, refreshToken: string }) => void;
+  login: (tokenInfo: { accessToken: string }) => void;
   logout: () => void;
 }
 
@@ -22,9 +22,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (tokenInfo: { accessToken: string, refreshToken: string }) => {
+  const login = (tokenInfo: { accessToken: string }) => {
     localStorage.setItem('task-pilot-accessToken', tokenInfo.accessToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${tokenInfo.accessToken}`;
+    springApi.defaults.headers.common['Authorization'] = `Bearer ${tokenInfo.accessToken}`;
     setIsAuthenticated(true);
   };
 
@@ -36,7 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/member/logout`, {
+      await springApi.delete(`/api/member/logout`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         },

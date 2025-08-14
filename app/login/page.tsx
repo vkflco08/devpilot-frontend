@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { AuthContext } from "@/contexts/AuthContext"
-import axios from "@/lib/axiosInstance"
+import { springApi } from "@/lib/axiosInstance"
 import Navbar from '@/components/layout/Navbar'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { FcGoogle } from "react-icons/fc"
@@ -38,7 +38,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const response = await axios.post("/api/member/login", {
+      const response = await springApi.post("/api/member/login", {
         loginId: loginId,
         password: password,
       })

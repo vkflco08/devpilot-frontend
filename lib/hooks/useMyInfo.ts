@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import axios from "@/lib/axiosInstance";
-
+import { springApi } from "@/lib/axiosInstance";
+  
 export interface MyInfo {
   id: number;
   loginId: string;
@@ -31,11 +31,9 @@ export function useMyInfo() {
       }
 
       try {
-        const res = await axios.get("/api/member/info", {
+        const res = await springApi.get("/api/member/info", {
           validateStatus: (status) => status < 500
         });
-
-        // console.log(res.data.data)
         
         if (res.data.resultCode === "SUCCESS") {
           setMyInfo(res.data.data);

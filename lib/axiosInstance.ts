@@ -15,7 +15,8 @@ interface TokenInfo {
   refreshToken: string;
 }
 
-const instance = axios.create({
+// --- 1. 스프링 백엔드 API 호출용 인스턴스 (기존 로직 유지) ---
+const springApiInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   withCredentials: true,
   headers: {
@@ -86,10 +87,10 @@ const refreshAccessToken = async (): Promise<string> => {
   }
 };
 
-// --- Axios 인터셉터 설정 ---
-
-instance.interceptors.request.use(
+// 스프링 API 요청 인터셉터: Access Token 추가
+springApiInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // 로그인 페이지로의 요청은 토큰을 추가하지 않음
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) {
       return config;
     }
@@ -107,15 +108,15 @@ instance.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터: 401 Unauthorized 에러 처리 및 토큰 갱신 로직
-instance.interceptors.response.use(
+// 스프링 API 응답 인터셉터: 401 Unauthorized 에러 처리 및 토큰 갱신 로직
+springApiInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { 
       _retry?: boolean,
       _isRetry?: boolean
     };
-    
+    console.log(error)
     // 1. 재시도할 필요가 없는 경우 (아래 조건 중 하나라도 해당하면)
     if (
       originalRequest._retry || originalRequest._isRetry || // 이미 재시도한 요청
@@ -126,39 +127,34 @@ instance.interceptors.response.use(
     }
 
     // 2. Refresh Token 갱신 요청 자체가 실패한 경우 (무한 루프 방지)
-    //    -> `refreshAccessToken`에서 이미 `forceLogout` 처리
     if (originalRequest.url?.includes('/api/auth/refresh')) {
-      // `refreshAccessToken` 내부에서 이미 `forceLogout`을 호출했으므로, 여기서는 단순히 `Promise.reject(error)`만 수행
       return Promise.reject(error); 
     }
 
     // 3. Access Token 만료 (`401 Unauthorized`) 감지 및 커스텀 에러 코드 확인
-    //    -> 백엔드 `BaseResponse`의 `resultCode`가 `'ACCESS_TOKEN_EXPIRED'`인지 정확히 확인
-    const backendResponse: BaseResponse<any> | undefined = error.response?.data;
+    const backendResponse: BaseResponse<any> | undefined = error.response?.data as BaseResponse<any> | undefined;
     const isAccessTokenExpired = error.response?.status === 401 && backendResponse?.resultCode === 'ACCESS_TOKEN_EXPIRED';
 
     if (!isAccessTokenExpired) {
-      // 401이지만 `ACCESS_TOKEN_EXPIRED`가 아닌 다른 이유 (예: 권한 없음, 잘못된 토큰 형식 등)
-      return Promise.reject(error); // 에러를 그대로 반환
+      return Promise.reject(error); 
     }
 
     // 4. Access Token 만료가 확인되었고, 토큰 갱신 로직 실행
     if (isRefreshing) {
-      // 이미 토큰 갱신이 진행 중이라면, 현재 요청을 대기열에 추가하고 새 토큰 발급 시 재시도
       return new Promise((resolve, reject) => {
         refreshSubscribers.push((newToken: string) => {
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
           }
-          originalRequest._isRetry = true; // 재시도 플래그 설정
-          resolve(instance(originalRequest)); // 원래 요청을 새 토큰으로 재시도
+          originalRequest._isRetry = true; 
+          resolve(springApiInstance(originalRequest)); 
         });
       });
     }
 
     // 5. 토큰 갱신 프로세스 시작 (이 블록은 한 번의 만료 이벤트에 대해 한 번만 실행됨)
     isRefreshing = true;
-    originalRequest._retry = true; // 이 요청은 재시도될 것임
+    originalRequest._retry = true; 
 
     try {
       const newToken = await refreshAccessToken();
@@ -167,7 +163,7 @@ instance.interceptors.response.use(
       if (originalRequest.headers) {
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
       }
-      return instance(originalRequest);
+      return springApiInstance(originalRequest);
     } catch (refreshError) {
       return Promise.reject(refreshError);
     } finally {
@@ -176,4 +172,36 @@ instance.interceptors.response.use(
   }
 );
 
-export default instance;
+// --- 2. LLM 에이전트 API 호출용 인스턴스 ---
+const llmAgentInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_LLM_AGENT_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// LLM 에이전트 요청 인터셉터: Access Token 추가 (갱신 로직 없이 단순 전달)
+llmAgentInstance.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('task-pilot-accessToken');
+    if (token && typeof token === 'string' && token !== 'undefined' && token !== 'null') { 
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn("LLM Agent API call made without JWT token.");
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+llmAgentInstance.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    return Promise.reject(error);
+  }
+);
+
+export const springApi = springApiInstance; 
+export const llmAgentApi = llmAgentInstance;

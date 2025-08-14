@@ -15,7 +15,7 @@ export default function OAuth2RedirectPage() {
 
   useEffect(() => {
     if (accessToken && authContext) {
-      authContext.login(accessToken)
+      authContext.login({ accessToken })
       router.replace("/")
     } else {
       alert("소셜 로그인 실패: 토큰 없음")

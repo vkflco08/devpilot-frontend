@@ -15,7 +15,7 @@ import { BarChart3, PlusCircle } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { Button, } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog" // Dialog 임포트
-import axios from "@/lib/axiosInstance"
+import { springApi } from "@/lib/axiosInstance"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import { ProjectStatus } from "@/lib/types"
 
@@ -85,7 +85,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   // 프로젝트 목록 fetch
   const fetchProjects = async () => {
     try {
-      const res = await axios.get("/api/project/dashboard")
+      const res = await springApi.get("/api/project/dashboard")
       if (res.data.resultCode === "SUCCESS") {
         setProjects(res.data.data)
       } else {
@@ -103,9 +103,9 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     try {
       let res;
       if (projectId === 'all') {
-        res = await axios.get("/api/task/all")
+        res = await springApi.get("/api/task/all")
       } else {
-        res = await axios.get(`/api/project/${projectId}`)
+        res = await springApi.get(`/api/project/${projectId}`)
       }
       
       if (res.data.resultCode === "SUCCESS") {
@@ -195,7 +195,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     if (newStatus && activeTask && activeTask.status !== newStatus) {
       setTaskLoading(true);
       try {
-        const response = await axios.put(`/api/task/${activeTaskId}`, { status: newStatus });
+        const response = await springApi.put(`/api/task/${activeTaskId}`, { status: newStatus });
         if (response.data?.resultCode === "SUCCESS") {
           await fetchTasks(selectedProjectId); // 데이터 다시 페치하여 UI 업데이트
         } else {
@@ -212,7 +212,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   const handleToggleTaskStatus = async (taskId: number, newStatus: TaskStatus, previousStatusToSend: TaskStatus | null) => {
     setTaskLoading(true);
     try {
-        const response = await axios.put(`/api/task/${taskId}`, { 
+        const response = await springApi.put(`/api/task/${taskId}`, { 
             status: newStatus,
             previousStatus: previousStatusToSend 
         });
@@ -231,7 +231,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   const handleCreateTask = async (newTask: Task) => { // newTask는 CreateTaskDialog에서 넘어온 Task 객체
     setTaskLoading(true)
     try {
-      const response = await axios.post("/api/task/new", {
+      const response = await springApi.post("/api/task/new", {
         title: newTask.title,
         description: newTask.description === '' ? '' : (newTask.description || null),
         status: newTask.status,
@@ -260,7 +260,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   const handleUpdateTask = async (updatedTask: Task) => {
     setTaskLoading(true)
     try {
-      const response = await axios.put(`/api/task/${updatedTask.id}`, {
+      const response = await springApi.put(`/api/task/${updatedTask.id}`, {
         title: updatedTask.title,
         description: updatedTask.description === '' ? '' : (updatedTask.description || null),
         status: updatedTask.status,
@@ -288,7 +288,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     if (!window.confirm("정말 삭제하시겠습니까?")) return
     setTaskLoading(true)
     try {
-      const response = await axios.delete(`/api/task/${taskId}`)
+      const response = await springApi.delete(`/api/task/${taskId}`)
       if (response.data?.resultCode === "SUCCESS") {
         await fetchTasks(selectedProjectId)
         setIsDetailDialogOpen(false)
@@ -315,7 +315,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
   const handleDuplicateTask = async (taskToDuplicate: Task) => {
     setTaskLoading(true);
     try {
-      const response = await axios.post("/api/task/new", {
+      const response = await springApi.post("/api/task/new", {
         title: `${taskToDuplicate.title} (복제됨)`,
         description: taskToDuplicate.description,
         status: TaskStatus.TODO,
@@ -393,7 +393,7 @@ export default function Dashboard({ isCreateDialogOpen, setIsCreateDialogOpen }:
     }
     setLoading(true)
     try {
-      const response = await axios.post("/api/project/new", {
+      const response = await springApi.post("/api/project/new", {
         projectName: projectName.trim(),
         projectDescription: projectDesc.trim() || undefined,
         projectStatus: ProjectStatus.ACTIVE,

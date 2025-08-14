@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { TaskStatus } from "@/lib/types"
 import { AuthContext } from '@/contexts/AuthContext'
 import RequireAuth from "@/components/RequireAuth"
-import axios from "@/lib/axiosInstance"
+import { springApi } from "@/lib/axiosInstance"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useTheme } from "next-themes"
@@ -67,7 +67,7 @@ function ProfileEditDialog({ open, onOpenChange, myInfo, onSave }: { open: boole
   const handleSave = async () => {
     setLoading(true)
     try {
-      const res = await axios.put("/api/member/info_edit", form)
+      const res = await springApi.put("/api/member/info_edit", form)
       if (res.data.resultCode === "SUCCESS") {
         onSave()
         onOpenChange(false)
@@ -158,7 +158,7 @@ export default function MyPage() {
     const fetchTasks = async () => {
       setTasksLoading(true)
       try {
-        const res = await axios.get("/api/task/all")
+        const res = await springApi.get("/api/task/all")
         if (res.data.resultCode === "SUCCESS") {
           setTasks(res.data.data)
         } else {
@@ -177,7 +177,7 @@ export default function MyPage() {
     const fetchProjects = async () => {
       setProjectsLoading(true)
       try {
-        const res = await axios.get("/api/project/mypage")
+        const res = await springApi.get("/api/project/mypage")
         if (res.data.resultCode === "SUCCESS") {
           setProjects(res.data.data)
         } else {
@@ -244,7 +244,7 @@ export default function MyPage() {
   const handleUpdateProject = async (project: Project) => {
     setProjectsLoading(true)
     try {
-      const response = await axios.put(`/api/project/${project.id}`, {
+      const response = await springApi.put(`/api/project/${project.id}`, {
         projectName: project.name,
         projectDescription: project.description,
         projectStatus: project.status || ProjectStatus.ACTIVE
@@ -272,7 +272,7 @@ export default function MyPage() {
     if (!window.confirm("프로젝트를 삭제하면 프로젝트에 포함된 태스크들도 삭제됩니다. 정말 삭제하시겠습니까?")) return
     setProjectsLoading(true)
     try {
-      const response = await axios.delete(`/api/project/${project.id}`)
+      const response = await springApi.delete(`/api/project/${project.id}`)
       if (response.data?.resultCode === "SUCCESS") {
         // 현재 projects 상태에서 삭제된 프로젝트를 제거
         setProjects(prev => prev.filter(p => p.id !== project.id))
@@ -290,7 +290,7 @@ export default function MyPage() {
 
   const handleBindGoogleAccount = async () => {
     try {
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/bind/google`)
+      const response = await springApi.get(`/api/auth/bind/google`)
       const redirectUrl = response.data.data
       console.log(response)
       window.location.href = redirectUrl
