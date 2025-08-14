@@ -7,6 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { X, Send } from "lucide-react"
 // sendMessageToAgent는 이제 훅 내부에서 사용되므로 여기서는 직접 임포트할 필요 없음
 import { useChatAgent } from "@/lib/hooks/useChatAgent"; // 새로 생성한 훅 임포트
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatPanelProps {
   isOpen: boolean
@@ -56,7 +58,15 @@ export default function ChatPanel({ isOpen, onClose, userId }: ChatPanelProps) {
                       : "bg-muted"
                   }`}
                 >
-                  {msg.text}
+                  {msg.from === 'bot' ? (
+                    <div className="prose dark:prose-invert text-sm">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.text}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.text
+                  )}  
                 </div>
               </div>
             ))}
